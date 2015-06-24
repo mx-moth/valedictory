@@ -1,10 +1,11 @@
-import unittest
-
-from valedictory import Validator, fields
+from valedictory import InvalidDataException, Validator, fields
 from valedictory.base import partition_dict
+from valedictory.exceptions import ValidationException
+
+from .utils import ValidatorTestCase
 
 
-class TestValidators(unittest.TestCase):
+class TestValidators(ValidatorTestCase):
 
     def test_cleaning_fields(self):
         validator = Validator(fields={
@@ -12,10 +13,9 @@ class TestValidators(unittest.TestCase):
             'string': fields.StringField()})
 
         data = {'int': 10, 'string': 'foo'}
-        cleaned_data, errors = validator.clean(data)
+        cleaned_data = validator.clean(data)
 
         self.assertEqual(data, cleaned_data)
-        self.assertIsNone(errors)
 
     def test_unknown_fields_disallowed(self):
         """
@@ -26,9 +26,12 @@ class TestValidators(unittest.TestCase):
             'string': fields.StringField()})
 
         data = {'int': 10, 'string': 'foo', 'nope': 'nope'}
-        cleaned_data, errors = validator.clean(data)
-        self.assertEqual(['nope'], sorted(errors.keys()))
-        self.assertIsNone(cleaned_data)
+        with self.assertRaises(InvalidDataException) as cm:
+            validator.clean(data)
+        errors = cm.exception
+        self.assertEqual(['nope'], sorted(errors.invalid_fields.keys()))
+        self.assertEqual(errors, InvalidDataException({
+            'nope': ValidationException('Unknown field')}))
 
     def test_unknown_fields_allowed(self):
         """
@@ -38,13 +41,12 @@ class TestValidators(unittest.TestCase):
             'int': fields.IntegerField(),
             'string': fields.StringField()})
 
-        cleaned_data, errors = validator.clean({'int': 10, 'string': 'foo', 'nope': 'nope'})
+        cleaned_data = validator.clean({'int': 10, 'string': 'foo', 'nope': 'nope'})
 
         self.assertEqual({'int': 10, 'string': 'foo'}, cleaned_data)
-        self.assertIsNone(errors)
 
 
-class TestDeclarativeValidators(unittest.TestCase):
+class TestDeclarativeValidators(ValidatorTestCase):
 
     def test_no_inheritance(self):
         class MyValidator(Validator):
@@ -56,9 +58,8 @@ class TestDeclarativeValidators(unittest.TestCase):
             ['int', 'string'])
 
         data = {'int': 10, 'string': 'foo'}
-        cleaned_data, errors = MyValidator().clean(data)
+        cleaned_data = MyValidator().clean(data)
         self.assertEqual(data, cleaned_data)
-        self.assertIsNone(errors)
 
     def test_single_inheritance(self):
         class ParentValidator(Validator):
@@ -108,15 +109,14 @@ class TestDeclarativeValidators(unittest.TestCase):
 
         validator = MyValidator()
         data = {'int': 10, 'string': 'foo'}
-        cleaned_data, errors = validator.clean(data)
+        cleaned_data = validator.clean(data)
 
         self.assertEqual(data, cleaned_data)
-        self.assertIsNone(errors)
         self.assertEqual("foo", validator.do_thing())
         self.assertEqual("baz", validator.bar)
 
 
-class TestMisc(unittest.TestCase):
+class TestMisc(ValidatorTestCase):
     def test_partition_dict(self):
         keys = set()
         values = set()

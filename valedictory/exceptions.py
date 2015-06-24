@@ -1,21 +1,34 @@
 from __future__ import absolute_import, unicode_literals
 
-from collections import defaultdict
+
+class BaseValidationException(Exception):
+    """
+    All exceptions used by this will be subclasses of this exception class.
+    """
+    pass
 
 
-class ValidationErrors(defaultdict):
+class InvalidDataException(BaseValidationException):
     """
     Lists of validation errors for each field in a validator.
 
     Only filled out for a field if the field has an error.
     """
     def __init__(self, errors={}):
-        super(ValidationErrors, self).__init__(list)
-        self.update(errors)
+        super(BaseValidationException, self).__init__()
+        self.invalid_fields = {}
+        self.invalid_fields.update(errors)
+
+    def __str__(self):
+        inner = ', '.join('{0}: {1}'.format(k, v)
+                          for k, v in self.invalid_fields.items())
+        return '{' + inner + '}'
 
     def __repr__(self):
-        inner = ', '.join('{0}: {1}'.format(k, v) for k, v in self.items())
-        return '{' + inner + '}'
+        return '<{} {}>'.format(self.__class__.__name__, str(self))
+
+    def __bool__(self):
+        return bool(self.invalid_fields)
 
     def flatten(self):
         """
@@ -43,19 +56,17 @@ class ValidationErrors(defaultdict):
             (['items', 2, 'quantity'], ['This must be equal to or greater than the minimum of 1']),
         ]
         """
-        for name, error_list in sorted(self.items()):
-            if isinstance(error_list, NestedValidatorException):
-                for nested_name, error in error_list.errors.flatten():
-                    yield [name] + nested_name, error
+        for name, error in self.invalid_fields.items():
+            if isinstance(error, InvalidDataException):
+                for nested_name, nested_error in error.flatten():
+                    yield (name,) + nested_name, nested_error
             else:
-                yield [name], [error.msg for error in error_list]
+                yield (name,), error.msg
 
-
-class BaseValidationException(Exception):
-    """
-    All exceptions used by this will be subclasses of this exception class.
-    """
-    pass
+    def __eq__(self, other):
+        if not isinstance(other, InvalidDataException):
+            return NotImplemented
+        return self.invalid_fields == other.invalid_fields
 
 
 class ValidationException(BaseValidationException):
@@ -73,13 +84,10 @@ class ValidationException(BaseValidationException):
     def __repr__(self):
         return '<{str}>'.format(str=self)
 
-
-class NestedValidatorException(BaseValidationException):
-    """
-    Something is wrong! Specifically in a nested validator.
-    """
-    def __init__(self, errors):
-        self.errors = errors
+    def __eq__(self, other):
+        if not isinstance(other, ValidationException):
+            return NotImplemented
+        return self.msg == other.msg
 
 
 class NoData(BaseValidationException):

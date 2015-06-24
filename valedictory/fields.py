@@ -4,8 +4,7 @@ import re
 from gettext import gettext as _
 
 from .exceptions import (
-    ValidationErrors, BaseValidationException, ValidationException, NoData,
-    NestedValidatorException)
+    BaseValidationException, InvalidDataException, ValidationException, NoData)
 
 
 class Field(object):
@@ -46,7 +45,7 @@ class TypedField(Field):
     type_name = u''
 
     default_error_messages = {
-        "invalid_type": _("This field must be a {type}, not {actual_type}"),
+        "invalid_type": _("This field must be a {type}"),
     }
 
     def clean(self, data):
@@ -54,11 +53,9 @@ class TypedField(Field):
 
         if (not isinstance(value, self.required_types) or
                 isinstance(value, self.excluded_types)):
-            actual_type = type(value)
             raise ValidationException(
                 self.error_messages["invalid_type"].format(
-                    type=self.type_name,
-                    actual_type=actual_type.__name__))
+                    type=self.type_name))
 
         return value
 
@@ -424,16 +421,16 @@ class ListField(TypedField):
     def clean(self, data):
         value = super(ListField, self).clean(data)
 
-        errors = ValidationErrors()
+        errors = InvalidDataException()
         cleaned_list = []
         for i, datum in enumerate(value):
             try:
                 cleaned_list.append(self.field.clean(datum))
             except BaseValidationException as err:
-                errors[i].append(err)
+                errors.invalid_fields[i] = err
 
         if errors:
-            raise NestedValidatorException(errors)
+            raise errors
         return cleaned_list
 
 
@@ -460,11 +457,7 @@ class NestedValidator(TypedField):
 
     def clean(self, data):
         value = super(NestedValidator, self).clean(data)
-
-        cleaned_data, errors = self.validator.clean(value)
-        if errors:
-            raise NestedValidatorException(errors)
-        return cleaned_data
+        return self.validator.clean(value)
 
     def __copy__(self, **kwargs):
         return super(NestedValidator, self).__copy__(validator=self.validator)

@@ -6,7 +6,7 @@ import functools
 from gettext import gettext as _
 
 from .exceptions import (
-    ValidationErrors, ValidationException, NoData, NestedValidatorException)
+    BaseValidationException, InvalidDataException, ValidationException, NoData)
 from .fields import Field
 
 
@@ -94,14 +94,14 @@ class BaseValidator(object):
 
         Returns the cleaned and validated data
         """
-        errors = ValidationErrors()
+        errors = InvalidDataException()
         cleaned_data = {}
-
         # Check for unknown fields
         if not self.allow_unknown_fields:
-            for name in data.keys():
-                if name not in self.fields:
-                    errors[name].append(self.error_messages['unknown'])
+            unknown_fields = set(data.keys()) - set(self.fields.keys())
+            for name in unknown_fields:
+                errors.invalid_fields[name] = ValidationException(
+                    self.error_messages['unknown'])
 
         # Validate all incoming fields
         for name, field in self.fields.items():
@@ -110,19 +110,16 @@ class BaseValidator(object):
                 value = field.clean(datum)
                 cleaned_data[name] = value
 
-            except NestedValidatorException as err:
-                errors[name] = err.msg
-
-            except ValidationException as err:
-                errors[name].extend(err.msg)
+            except BaseValidationException as err:
+                errors.invalid_fields[name] = err
 
             except NoData:
                 pass
 
         if errors:
-            return None, errors
+            raise errors
         else:
-            return cleaned_data, None
+            return cleaned_data
 
     def __getitem__(self, key):
         return self.fields[key]

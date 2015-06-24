@@ -1,18 +1,19 @@
 import datetime
-import unittest
 
 from valedictory import Validator
 
 from valedictory.exceptions import (
-    ValidationException, NestedValidatorException, NoData)
+    ValidationException, InvalidDataException, NoData)
 
 from valedictory.fields import (
     Field, StringField, BooleanField, IntegerField, EmailField, DateField,
     YearMonthField, ChoiceField, DigitField, CreditCardField,
     ListField, NestedValidator)
 
+from .utils import ValidatorTestCase
 
-class TestField(unittest.TestCase):
+
+class TestField(ValidatorTestCase):
 
     def test_required(self):
         field = Field()
@@ -31,7 +32,7 @@ class TestField(unittest.TestCase):
             field.clean(NoData)
 
 
-class TestStringField(unittest.TestCase):
+class TestStringField(ValidatorTestCase):
 
     def test_simple(self):
         field = StringField()
@@ -65,7 +66,7 @@ class TestStringField(unittest.TestCase):
             field.clean(10)
 
 
-class TestBooleanField(unittest.TestCase):
+class TestBooleanField(ValidatorTestCase):
 
     def test_simple(self):
         field = BooleanField()
@@ -86,7 +87,7 @@ class TestBooleanField(unittest.TestCase):
             field.clean("true")
 
 
-class TestIntegerField(unittest.TestCase):
+class TestIntegerField(ValidatorTestCase):
 
     def test_simple(self):
         field = IntegerField()
@@ -111,7 +112,7 @@ class TestIntegerField(unittest.TestCase):
             field.clean(True)
 
 
-class TestEmailField(unittest.TestCase):
+class TestEmailField(ValidatorTestCase):
 
     def test_simple(self):
         field = EmailField()
@@ -144,7 +145,7 @@ class TestEmailField(unittest.TestCase):
             field.clean(10)
 
 
-class TestDateField(unittest.TestCase):
+class TestDateField(ValidatorTestCase):
 
     def test_simple(self):
         field = DateField()
@@ -177,7 +178,7 @@ class TestDateField(unittest.TestCase):
             field.clean("Not even a date")
 
 
-class TestYearMonthField(unittest.TestCase):
+class TestYearMonthField(ValidatorTestCase):
 
     def test_simple(self):
         field = YearMonthField()
@@ -205,7 +206,7 @@ class TestYearMonthField(unittest.TestCase):
             field.clean("nope-no")
 
 
-class TestChoiceField(unittest.TestCase):
+class TestChoiceField(ValidatorTestCase):
 
     def test_simple(self):
         choices = ["hello", 10, True, False, None]
@@ -224,7 +225,7 @@ class TestChoiceField(unittest.TestCase):
                 field.clean(choice)
 
 
-class TestDigitField(unittest.TestCase):
+class TestDigitField(ValidatorTestCase):
 
     def test_simple(self):
         field = DigitField()
@@ -248,7 +249,7 @@ class TestDigitField(unittest.TestCase):
             field.clean("abc123")
 
 
-class TestCreditCardField(unittest.TestCase):
+class TestCreditCardField(ValidatorTestCase):
 
     def test_simple(self):
         field = CreditCardField()
@@ -270,7 +271,7 @@ class TestCreditCardField(unittest.TestCase):
             field.clean('5111111111111111')
 
 
-class TestListField(unittest.TestCase):
+class TestListField(ValidatorTestCase):
     def test_string_list(self):
         field = ListField(StringField())
 
@@ -297,13 +298,13 @@ class TestListField(unittest.TestCase):
 
         try:
             field.clean([1, "nope", 3, "strings"])
-        except NestedValidatorException as e:
-            self.assertEqual([1, 3], sorted(e.errors.keys()))
+        except InvalidDataException as e:
+            self.assertEqual([1, 3], sorted(e.invalid_fields.keys()))
         else:
             self.fail("Expecting to catch ValidationException")
 
 
-class TestNestedValidators(unittest.TestCase):
+class TestNestedValidators(ValidatorTestCase):
     def test_nested_validator(self):
         field = NestedValidator(Validator(fields={
             'int': IntegerField(),
@@ -314,7 +315,7 @@ class TestNestedValidators(unittest.TestCase):
             field.clean({'string': 'foo', 'int': 10}))
 
 
-class TestNestedLists(unittest.TestCase):
+class TestNestedLists(ValidatorTestCase):
     def test_nested_lists(self):
         field = ListField(NestedValidator(Validator(fields={
             'int': IntegerField(), 'string': StringField()})))
