@@ -90,9 +90,11 @@ class BaseValidator(object):
 
     def clean(self, data):
         """
-        Take the form data supplied, and clean it using the validators
+        Take input data, validate that it conforms to the required schema,
+        and return the cleaned output.
 
-        Returns the cleaned and validated data
+        If the data does not conform to the required schema,
+        an :exc:`~valedictory.exceptions.InvalidDataException` will be raised.
         """
         errors = InvalidDataException()
         cleaned_data = {}

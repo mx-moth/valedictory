@@ -8,8 +8,37 @@ from .exceptions import (
 
 
 class Field(object):
+    """
+    The base class for all fields.
+    By itself, :class:`~Field` only enforces the :attr:`Field.required` behaviour.
+    Subclasses of :class:`~Field` add more validation rules to add more useful behaviours.
+
+    **Attributes**
+
+    .. autoattribute:: required
+        :annotation:
+
+    .. autoattribute:: default_error_messages
+        :annotation:
+
+    **Methods**
+
+    .. automethod:: clean
+    """
+
+    #: Is this field required to be present in the data.
+    #:
+    #: If a field is not required, and is not present in the data,
+    #: it will not be present in the cleaned data either.
+    #: If a field is required, and is not present in the data,
+    #: a :exc:`~valedictory.exceptions.ValidationException` will be thrown.
     required = True
 
+    #: A dictionary of messages for each error this field can raise.
+    #:
+    #: required
+    #:     Raised when the field is not in the input data,
+    #:     but the field is required.
     default_error_messages = {
         "required": _("This field is required"),
     }
@@ -24,6 +53,14 @@ class Field(object):
         self.error_messages = messages
 
     def clean(self, data):
+        """
+        Clean and validate the given data.
+
+        If there is no data for the field,
+        pass in the :exc:`~valedictory.exceptions.NoData` class to signal this.
+        If the field is required, a :exc:`~valedictory.exceptions.ValidationException` will be raised.
+        If the field is not required, :exc:`~valedictory.exceptions.NoData` is returned.
+        """
         if data is NoData:
             if self.required:
                 raise ValidationException(self.error_messages['required'])
@@ -37,13 +74,37 @@ class Field(object):
 
 class TypedField(Field):
     """
-    Base Field class for fields that require a specific type of input, such as
+    A :class:`Field` that requires a specific type of input, such as
     strings, integers, or booleans.
+
+    .. autoattribute:: required_types
+        :annotation:
+
+    .. autoattribute:: excluded_types
+        :annotation:
+
+    .. autoattribute:: type_name
+        :annotation:
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
+
+    #: A tuple of acceptable classes for the data.
+    #: For example, ``(int, float)`` would accept any number type.
     required_types = ()
+
+    #: A tuple of unacceptable classes for the data.
+    #: For example, ``bool``\s are subclasses of ``int``\s,
+    #: but should not be accepted as valid data when an number is expected.
     excluded_types = ()
+
+    #: The friendly name of the type for error messages.
     type_name = u''
 
+    #: invalid_type
+    #:     Raised when the incoming data is not an instance of :attr:`required_types`,
+    #:     or is a subclass of :attr:`excluded_types`.
     default_error_messages = {
         "invalid_type": _("This field must be a {type}"),
     }
@@ -63,12 +124,34 @@ class TypedField(Field):
 class StringField(TypedField):
     """
     Accepts a string, and only strings.
+
+    .. autoattribute:: min_length
+
+    .. autoattribute:: max_length
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
-    required_types = str
+    required_types = (str,)
+
     type_name = u'string'
+
+    #: The minimum acceptable length of the string.
+    #: Defaults to no minimum length.
     min_length = 0
+
+    #: The maximum acceptable length of the string.
+    #: Defaults to no maximum length.
     max_length = float('inf')
 
+    #: non_empty
+    #:     Raised when the input is an empty string, but :attr:`min_length` is 1.
+    #:
+    #: min_length
+    #:     Raised when the input is shorter than :attr:`min_length`.
+    #:
+    #: max_length
+    #:     Raised when the input is longer than :attr:`max_length`.
     default_error_messages = {
         "non_empty": "This field can not be empty",
         "min_length": "Minimum length {0}",
@@ -126,10 +209,31 @@ class BooleanField(TypedField):
 class IntegerField(TypedField):
     """
     A field that only accepts integer values.
+
+    .. autoattribute:: min
+
+    .. autoattribute:: max
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
     required_types = int
     excluded_types = bool  # bools subclass ints :(
     type_name = u'integer'
+
+    #: The minimum allowable value. Values lower than this will raise an exception.
+    #: Defaults to no minimum value.
+    min = None
+
+    #: The maximum allowable value. Values higher than this will raise an exception.
+    #: Defaults to no maximum value.
+    max = None
+
+    #: min_value
+    #:     Raised when the value is lower than :attr:`min`.
+    #:
+    #: max_value
+    #:     Raised when the value is higher than :attr:`max`.
     default_error_messages = {
         'min_value': _("This must be equal to or greater than the minimum of {0}"),
         'max_value': _("This must be equal to or less than the maximum of {0}"),
@@ -146,8 +250,11 @@ class IntegerField(TypedField):
           value the field will accept. The range is inclusive.
         """
         super(IntegerField, self).__init__(*args, **kwargs)
-        self.min = min
-        self.max = max
+        if min is not None:
+            self.min = min
+
+        if max is not None:
+            self.max = max
 
     def clean(self, data):
         value = super(IntegerField, self).clean(data)
@@ -173,10 +280,15 @@ class EmailField(StringField):
     expression only checks for basic conformance: the string must have at least
     one character, then an '@' symbol, then more characters with at least one
     dot.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
 
     email_re = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
+    #: invalid_email
+    #:     Raised when the data is not a valid email address
     default_error_messages = {
         'invalid_email': _("Not a valid email address"),
     }
@@ -193,11 +305,16 @@ class DateField(StringField):
     A field that only accepts ISO 8601 date strings.
 
     After cleaning, a ``datetime.date`` instance is returned.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
 
     # YYYY-MM-DD = 10 chars.
     max_length = 10
 
+    #: invalid_date
+    #:     Raised when the input is not a valid date
     default_error_messages = {
         'invalid_date': _("Not a valid date"),
     }
@@ -217,13 +334,14 @@ class YearMonthField(StringField):
     """
     A field that only accepts ``YYYY-MM`` date strings.
 
-    After cleaning, a tuple of ``(year, month)`` instance is returned.
+    After cleaning, a tuple of ``(year, month)`` integers are returned.
     """
 
-    # YYYY-MM = 9 chars.
-    # Support 6 digit years, to keep the long now/y10k people happy
-    max_length = 9
+    # YYYY-MM = 7 chars.
+    max_length = 7
 
+    #: invalid_date
+    #:     Raised when the input is not a valid year-month tuple
     default_error_messages = {
         'invalid_date': _("Not a valid date"),
     }
@@ -243,22 +361,25 @@ class ChoiceField(Field):
     """
     A field that only accepts values from a predefined list. The values can be
     of any type.
+
+    .. autoattribute:: choices
+        :annotation:
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
 
+    #: An iterable of choices.
+    #: The field will only accept data if the value is in this list.
+    choices = None
+
+    #: invalid_choice
+    #:     Raised when the value is not one of the valid choices
     default_error_messages = {
         'invalid_choice': _("Not a valid choice"),
     }
 
     def __init__(self, choices, **kwargs):
-        """
-        Construct a ChoiceField.
-
-        In addition to the arguments accepted by the ``Field`` class, the
-        following arguments are accepted:
-
-        * ``choices`` must be an iterable of choices. The field will only
-          accept data if the value is in this list.
-        """
         super(ChoiceField, self).__init__(**kwargs)
         self.choices = list(choices)
 
@@ -277,16 +398,52 @@ class PunctuatedCharacterField(TypedField):
     A field that accepts characters only from an alphabet of allowed
     characters. A set of allowed punctuation characters are allowed and
     discarded when cleaned.
+
+    .. autoattribute:: alphabet
+        :annotation:
+
+    .. autoattribute:: punctuation
+        :annotation:
+
+    .. autoattribute:: min_length
+
+    .. autoattribute:: max_length
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
+
     required_types = (str)
     type_name = u'string'
 
+    #: A string of all the allowed characters,
+    #: not including :attr:`punctuation` characters.
+    #: The cleaned output will consist only of characters from this string.
     alphabet = None
+
+    #: A string of all the punctuation characters allowed.
+    #: Punctuation characters will be removed from the cleaned output.
     punctuation = None
 
+    #: The minimum length of the cleaned output data,
+    #: not including punctuation characters.
+    #: There is no minimum length by default.
     min_length = 0
+
+    #: The maximum length of the cleaned output data,
+    #: not including punctuation characters.
+    #: There is no maximum length by default.
     max_length = float('inf')
 
+    #: allowed_characters
+    #:     Raised when characters not in
+    #:     :attr:`alphabet` or :attr:`punctuation` are in the input.
+    #:
+    #: min_length
+    #:     Raised when the cleaned string is shorter than :attr:`min_length`.
+    #:
+    #: max_length
+    #:     Raised when the cleaned string is longer than :attr:`max_length`.
     default_error_messages = {
         "allowed_characters": _("Only the characters '{alphabet}{punctuation}' are allowed"),
         "min_length": "Minimum length {0}",
@@ -354,22 +511,38 @@ class PunctuatedCharacterField(TypedField):
 
 class RestrictedCharacterField(PunctuatedCharacterField):
     """
-    A field that only allows a defined alphabet of characters to be used
+    A field that only allows a defined alphabet of characters to be used.
+
+    This is just a :class:`PunctuatedCharacterField`,
+    with :attr:`~PunctuatedCharacterField.punctuation` set to the empty string.
+
+    .. attribute:: alphabet
+
+        A string of the characters allowed in the input.
+        If the input contains a character not in this string,
+        a :exc:`valedictory.exceptions.ValidationException` is raised.
     """
+
     punctuation = ''
 
 
 class DigitField(RestrictedCharacterField):
     """
-    A field that only allows digits. It is not treated as a number, however,
-    and leading zeros are preserved
+    A field that only allows strings made up of digits.
+    It is not treated as a number, and leading zeros are preserved.
     """
     alphabet = '0123456789'
 
 
 class CreditCardField(PunctuatedCharacterField):
     """
-    Accepts credit card numbers
+    Accepts credit card numbers.
+    The credit card numbers are checked using the Luhn checksum.
+
+    The credit card number can optionally be punctuated by `" -"` characters.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
     punctuation = ' -'
     alphabet = '0123456789'
@@ -377,6 +550,9 @@ class CreditCardField(PunctuatedCharacterField):
     min_length = 12
     max_length = 20
 
+    #: luhn_checksum
+    #:     Raised when the credit card is not valid,
+    #:     according to the Luhn checksum
     default_error_messages = {
         "luhn_checksum": _("The credit card number is not valid"),
     }
@@ -398,9 +574,22 @@ class CreditCardField(PunctuatedCharacterField):
 
 class ListField(TypedField):
     """
-    List fields allow checking that all items in a list all pass
-    validation.
+    A list field validates all elements of a list against a field.
+    For example, to accept a list of integers,
+    you could declare a :class:`ListField` like:
+
+    .. code:: python
+
+        class MyValidator(Validator):
+            numbers = ListField(IntegerField())
+
+    .. autoattribute:: field
+        :annotation:
+
     """
+
+    #: The field to validate all elements of the input data against.
+    field = None
 
     required_types = list
     type_name = 'list'
@@ -436,8 +625,36 @@ class ListField(TypedField):
 
 class NestedValidator(TypedField):
     """
-    Nested validators allow nesting dicts inside one another. A validator is
-    used to validate and clean the nested dict.
+    Nested validators allow nesting dicts inside one another.
+    A validator is used to validate and clean the nested dict.
+    To validate a person with structured address data,
+    you could make a :class:`valedictory.Validator` like:
+
+    .. code:: python
+
+        class AddressValidator(Validator):
+            street = StringField(min_length=1)
+            suburb = StringField(min_length=1)
+            postcode = DigitField(min_length=4, max_length=4)
+            state = ChoiceField('ACT NSW NT QLD SA TAS VIC WA'.split())
+
+        class Person(Validator):
+            name = StringField()
+            address = NestedValidator(AddressValidator())
+
+    This would accept data like:
+
+    .. code:: json
+
+        {
+            "name": "Alex Smith",
+            "address": {
+                "street": "123 Example Street",
+                "suburb": "Example Burb",
+                "postcode": "7123",
+                "state": "TAS"
+            }
+        }
     """
     required_types = (dict, )
     type_name = 'object'

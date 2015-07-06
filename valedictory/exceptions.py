@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 
 class BaseValidationException(Exception):
     """
-    All exceptions used by this will be subclasses of this exception class.
+    All validation exceptions will be subclasses of this exception.
     """
     pass
 
@@ -13,7 +13,23 @@ class InvalidDataException(BaseValidationException):
     Lists of validation errors for each field in a validator.
 
     Only filled out for a field if the field has an error.
+
+    .. autoattribute:: invalid_fields
+        :annotation:
+
+    .. automethod:: flatten
     """
+
+    #: A dict with the validation exceptions for all fields that
+    #: failed validation.
+    #: Normal field errors will be a
+    #: :exc:`~valedictory.exceptions.ValidationException` instance,
+    #: while errors for
+    #: :class:`~valedictory.fields.ListField` and
+    #: :class:`~valedictory.fields.NestedValidator`
+    #: may also be :exc:`InvalidDataException` instances.
+    invalid_fields = None
+
     def __init__(self, errors={}):
         super(BaseValidationException, self).__init__()
         self.invalid_fields = {}
@@ -30,6 +46,11 @@ class InvalidDataException(BaseValidationException):
     def __bool__(self):
         return bool(self.invalid_fields)
 
+    def __eq__(self, other):
+        if not isinstance(other, InvalidDataException):
+            return NotImplemented
+        return self.invalid_fields == other.invalid_fields
+
     def flatten(self):
         """
         Yield a pair of ``(path, errors)`` for each error.
@@ -40,12 +61,12 @@ class InvalidDataException(BaseValidationException):
             (['foo'], ['This field can not be empty']),
         ]
 
-        If an error is a :cls:`NestedValidatorException`, then errors are
+        If an error is a :class:`InvalidDataException`, then errors are
         recursively extracted.  ``path`` will be an array of the path to the
         error. ``errors`` will be an array of the error messages from these
         errors.
 
-        If validator was constructed for a shopping card, which had user
+        If validator was constructed for a shopping cart, which had user
         details and a list of items in a shopping cart, made using a
         NestedValidator inside a ListField, some possible flattened errors
         might be:
@@ -63,16 +84,18 @@ class InvalidDataException(BaseValidationException):
             else:
                 yield (name,), error.msg
 
-    def __eq__(self, other):
-        if not isinstance(other, InvalidDataException):
-            return NotImplemented
-        return self.invalid_fields == other.invalid_fields
-
 
 class ValidationException(BaseValidationException):
     """
-    Something is wrong!
+    A field has failed validation.
+
+    .. autoattribute:: msg
+        :annotation:
     """
+
+    #: The validation error as a human readable string.
+    msg = None
+
     def __init__(self, message, **kwargs):
         self.msg = message
         super(ValidationException, self).__init__(message, **kwargs)
