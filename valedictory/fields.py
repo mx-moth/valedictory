@@ -359,18 +359,17 @@ class YearMonthField(StringField):
 
 class ChoiceField(Field):
     """
-    A field that only accepts values from a predefined list. The values can be
-    of any type.
+    A field that only accepts values from a predefined set of choices.
+    The values can be of any hashable type.
 
     .. autoattribute:: choices
-        :annotation:
+        :annotation: = set()
 
     .. autoattribute:: default_error_messages
         :annotation:
     """
 
-    #: An iterable of choices.
-    #: The field will only accept data if the value is in this list.
+    #: The field will only accept data if the value is in this set.
     choices = None
 
     #: invalid_choice
@@ -381,16 +380,67 @@ class ChoiceField(Field):
 
     def __init__(self, choices, **kwargs):
         super(ChoiceField, self).__init__(**kwargs)
-        self.choices = list(choices)
+        self.choices = set(choices)
 
     def clean(self, data):
         value = super(ChoiceField, self).clean(data)
-        if value not in self.choices:
+        try:
+            if value not in self.choices:
+                raise ValidationException(self.error_messages['invalid_choice'])
+        except TypeError:
+            # {} in set() throws a TypeError: unhashable type: 'dict'
             raise ValidationException(self.error_messages['invalid_choice'])
+
         return value
 
     def __copy__(self, **kwargs):
         return super(ChoiceField, self).__copy__(choices=self.choices)
+
+
+class ChoiceMapField(Field):
+    """
+    A field that only accepts values from a predefined dictionary of choices.
+    The dictionary maps from valid input choices to the cleaned value returned.
+
+    For example, a :class:`ChoiceMapField` such as:
+
+    .. code:: python
+
+        ChoiceMapField({1: 'one', 2: 'two', 3: 'three'})
+
+    would only accept one of the numbers 1, 2 or 3 as input,
+    and would return one of the strings "one", "two", or "three".
+
+    .. autoattribute:: choices
+        :annotation: = set()
+
+    .. autoattribute:: default_error_messages
+        :annotation:
+    """
+
+    #: The field will only accept data if the value is in this set.
+    choices = None
+
+    #: invalid_choice
+    #:     Raised when the value is not one of the valid choices
+    default_error_messages = {
+        'invalid_choice': _("Not a valid choice"),
+    }
+
+    def __init__(self, choices, **kwargs):
+        super(ChoiceMapField, self).__init__(**kwargs)
+        self.choices = dict(choices)
+
+    def clean(self, data):
+        value = super(ChoiceMapField, self).clean(data)
+        try:
+            return self.choices[value]
+        except (KeyError, TypeError):
+            # self.choices[{}] throws a TypeError: unhashable type: 'dict'
+            raise ValidationException(self.error_messages['invalid_choice'])
+
+    def __copy__(self, **kwargs):
+        return super(ChoiceMapField, self).__copy__(choices=self.choices)
 
 
 class PunctuatedCharacterField(TypedField):

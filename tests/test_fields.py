@@ -7,7 +7,7 @@ from valedictory.exceptions import (
 
 from valedictory.fields import (
     Field, StringField, BooleanField, IntegerField, EmailField, DateField,
-    YearMonthField, ChoiceField, DigitField, CreditCardField,
+    YearMonthField, ChoiceField, ChoiceMapField, DigitField, CreditCardField,
     ListField, NestedValidator)
 
 from .utils import ValidatorTestCase
@@ -220,6 +220,25 @@ class TestChoiceField(ValidatorTestCase):
         choices = ["hello", 10, True, False, None]
         invalid_choices = ["nope", 11, {}, []]
         field = ChoiceField(choices)
+        for choice in invalid_choices:
+            with self.assertRaises(ValidationException):
+                field.clean(choice)
+
+
+class TestChoiceMapField(ValidatorTestCase):
+
+    def test_simple(self):
+        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        field = ChoiceMapField(choices)
+        for data, cleaned_data in choices.items():
+            self.assertEqual(
+                cleaned_data,
+                field.clean(data))
+
+    def test_invalid(self):
+        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        invalid_choices = ["nope", 11, {}, []]
+        field = ChoiceMapField(choices)
         for choice in invalid_choices:
             with self.assertRaises(ValidationException):
                 field.clean(choice)
