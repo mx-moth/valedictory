@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals
+from collections import defaultdict
 
 
 class BaseValidationException(Exception):
@@ -32,7 +33,7 @@ class InvalidDataException(BaseValidationException):
 
     def __init__(self, errors={}):
         super(BaseValidationException, self).__init__()
-        self.invalid_fields = {}
+        self.invalid_fields = defaultdict(list)
         self.invalid_fields.update(errors)
 
     def __str__(self):
@@ -77,12 +78,13 @@ class InvalidDataException(BaseValidationException):
             (['items', 2, 'quantity'], ['This must be equal to or greater than the minimum of 1']),
         ]
         """
-        for name, error in self.invalid_fields.items():
-            if isinstance(error, InvalidDataException):
-                for nested_name, nested_error in error.flatten():
-                    yield (name,) + nested_name, nested_error
-            else:
-                yield (name,), error.msg
+        for name, error_list in self.invalid_fields.items():
+            for error in error_list:
+                if isinstance(error, InvalidDataException):
+                    for nested_name, nested_error in error.flatten():
+                        yield (name,) + nested_name, nested_error
+                else:
+                    yield (name,), error.msg
 
 
 class ValidationException(BaseValidationException):
@@ -111,6 +113,9 @@ class ValidationException(BaseValidationException):
         if not isinstance(other, ValidationException):
             return NotImplemented
         return self.msg == other.msg
+
+    def __hash__(self):
+        return hash(self.msg)
 
 
 class NoData(BaseValidationException):

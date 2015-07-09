@@ -616,7 +616,7 @@ class ListField(TypedField):
             try:
                 cleaned_list.append(self.field.clean(datum))
             except BaseValidationException as err:
-                errors.invalid_fields[i] = err
+                errors.invalid_fields[i].append(err)
 
         if errors:
             raise errors

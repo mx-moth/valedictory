@@ -102,8 +102,8 @@ class BaseValidator(object):
         if not self.allow_unknown_fields:
             unknown_fields = set(data.keys()) - set(self.fields.keys())
             for name in unknown_fields:
-                errors.invalid_fields[name] = ValidationException(
-                    self.error_messages['unknown'])
+                errors.invalid_fields[name].append(ValidationException(
+                    self.error_messages['unknown']))
 
         # Validate all incoming fields
         for name, field in self.fields.items():
@@ -113,7 +113,7 @@ class BaseValidator(object):
                 cleaned_data[name] = value
 
             except BaseValidationException as err:
-                errors.invalid_fields[name] = err
+                errors.invalid_fields[name].append(err)
 
             except NoData:
                 pass

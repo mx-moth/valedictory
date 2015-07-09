@@ -31,7 +31,7 @@ class TestValidators(ValidatorTestCase):
         errors = cm.exception
         self.assertEqual(['nope'], sorted(errors.invalid_fields.keys()))
         self.assertEqual(errors, InvalidDataException({
-            'nope': ValidationException('Unknown field')}))
+            'nope': [ValidationException('Unknown field')]}))
 
     def test_unknown_fields_allowed(self):
         """
