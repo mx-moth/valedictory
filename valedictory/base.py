@@ -88,7 +88,7 @@ class BaseValidator(object):
         messages.update(error_messages or {})
         self.error_messages = messages
 
-    def clean(self, data):
+    def clean(self, data, *args, **kwargs):
         """
         Take input data, validate that it conforms to the required schema,
         and return the cleaned output.
@@ -96,6 +96,14 @@ class BaseValidator(object):
         If the data does not conform to the required schema,
         an :exc:`~valedictory.exceptions.InvalidDataException` will be raised.
         """
+        cleaned_data, errors = self.clean_fields(data, *args, **kwargs)
+
+        if errors:
+            raise errors
+        else:
+            return cleaned_data
+
+    def clean_fields(self, data):
         errors = InvalidDataException()
         cleaned_data = {}
         # Check for unknown fields
@@ -118,10 +126,7 @@ class BaseValidator(object):
             except NoData:
                 pass
 
-        if errors:
-            raise errors
-        else:
-            return cleaned_data
+        return cleaned_data, errors
 
     def __getitem__(self, key):
         return self.fields[key]
