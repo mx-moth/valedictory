@@ -1,13 +1,16 @@
 from __future__ import absolute_import, unicode_literals
 
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import URLValidator
 from django.db.models import Model
+from django.utils.translation import ugettext_lazy as _
 
+from valedictory import fields
 from valedictory.exceptions import ValidationException
-from valedictory.fields import TypedField
 
 
-class UploadedFileField(TypedField):
+class UploadedFileField(fields.TypedField):
     """
     Accepts uploaded files
     """
@@ -15,7 +18,7 @@ class UploadedFileField(TypedField):
     type_name = 'file'
 
 
-class ForeignKeyField(TypedField):
+class ForeignKeyField(fields.TypedField):
     """
     A field that accepts foreign keys to a Django model.
     """
@@ -42,8 +45,8 @@ class ForeignKeyField(TypedField):
         self.field = field
         self.required_types = key_type
 
-    def clean(self, name, data):
-        value = super(ForeignKeyField, self).clean(name, data)
+    def clean(self, value):
+        value = super().clean(value)
         queryset = self.queryset
         model = queryset.model
         try:
@@ -57,3 +60,21 @@ class ForeignKeyField(TypedField):
         return super(ForeignKeyField, self).__copy__(
             queryset=self.queryset, field=self.field,
             key_type=self.required_types)
+
+
+class URLField(fields.StringField):
+    """
+    Accepts a URL as a string
+    """
+    validator = URLValidator()
+    default_error_messages = {
+        'invalid_url': _("Invalid URL"),
+    }
+
+    def clean(self, value):
+        value = super().clean(value)
+        try:
+            self.validator(value)
+        except ValidationError:
+            raise ValidationException(self.default_error_messages['invalid_url'])
+        return value
