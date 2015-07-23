@@ -53,7 +53,7 @@ ChoiceField
 .. autoclass:: ChoiceField
 
 ChoiceMapField
-===========
+==============
 
 .. autoclass:: ChoiceMapField
 

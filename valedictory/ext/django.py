@@ -1,4 +1,6 @@
-from __future__ import absolute_import, unicode_literals
+"""
+Fields that integrate with Django.
+"""
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
@@ -20,9 +22,15 @@ class UploadedFileField(fields.TypedField):
 
 class ForeignKeyField(fields.TypedField):
     """
-    A field that accepts foreign keys to a Django model.
+    Accepts foreign keys to a Django model, and returns the model instance when
+    cleaned.
     """
     type_name = 'foreign key'
+
+    default_error_messages = {
+        'missing': _("Object does not exist"),
+        'multiple': _("Multiple objects returned"),
+    }
 
     def __init__(self, queryset, field='pk', key_type=int, **kwargs):
         super(ForeignKeyField, self).__init__(**kwargs)
@@ -52,9 +60,9 @@ class ForeignKeyField(fields.TypedField):
         try:
             return queryset.get(**{self.field: value})
         except model.DoesNotExist:
-            raise ValidationException("Object does not exist")
+            raise ValidationException(self.error_messages['missing'])
         except model.MultipleObjectsReturned:
-            return ValidationException("Multiple objects returned")
+            raise ValidationException(self.error_messages['multiple'])
 
     def __copy__(self, **kwargs):
         return super(ForeignKeyField, self).__copy__(
@@ -64,7 +72,7 @@ class ForeignKeyField(fields.TypedField):
 
 class URLField(fields.StringField):
     """
-    Accepts a URL as a string
+    Accepts a URL as a string.
     """
     validator = URLValidator()
     default_error_messages = {
@@ -76,5 +84,5 @@ class URLField(fields.StringField):
         try:
             self.validator(value)
         except ValidationError:
-            raise ValidationException(self.default_error_messages['invalid_url'])
+            raise ValidationException(self.error_messages['invalid_url'])
         return value
