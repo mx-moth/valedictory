@@ -45,6 +45,20 @@ class TestValidators(ValidatorTestCase):
 
         self.assertEqual({'int': 10, 'string': 'foo'}, cleaned_data)
 
+    def test_not_required_fields(self):
+        """
+        Optional fields should be optional
+        """
+        validator = Validator(fields={
+            'int': fields.IntegerField(required=False),
+            'string': fields.StringField(required=False)})
+
+        self.assertEqual({}, validator.clean({}))
+        self.assertEqual({'int': 10}, validator.clean({'int': 10}))
+        self.assertEqual({'string': 'foo'}, validator.clean({'string': 'foo'}))
+        self.assertEqual({'int': 10, 'string': 'foo'},
+                         validator.clean({'int': 10, 'string': 'foo'}))
+
 
 class TestDeclarativeValidators(ValidatorTestCase):
 

@@ -52,6 +52,9 @@ class InvalidDataException(BaseValidationException):
             return NotImplemented
         return self.invalid_fields == other.invalid_fields
 
+    def __hash__(self):
+        return id(self)
+
     def flatten(self):
         """
         Yield a pair of ``(path, errors)`` for each error.
@@ -125,4 +128,5 @@ class NoData(BaseValidationException):
     bit where data is set in the output dict, so the output dict will **not**
     have the associated key.
     """
-    pass
+    def __str__(self):
+        return self.__class__.__name__

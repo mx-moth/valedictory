@@ -120,11 +120,11 @@ class BaseValidator(object):
                 value = field.clean(datum)
                 cleaned_data[name] = value
 
-            except BaseValidationException as err:
-                errors.invalid_fields[name].append(err)
-
             except NoData:
                 pass
+
+            except BaseValidationException as err:
+                errors.invalid_fields[name].append(err)
 
         return cleaned_data, errors
 
