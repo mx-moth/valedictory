@@ -2,11 +2,10 @@ from __future__ import absolute_import, unicode_literals
 
 import copy
 import functools
-
 from gettext import gettext as _
 
 from .exceptions import (
-    BaseValidationException, InvalidDataException, ValidationException, NoData)
+    BaseValidationException, InvalidDataException, NoData, ValidationException)
 from .fields import Field
 
 
