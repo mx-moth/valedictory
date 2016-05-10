@@ -3,16 +3,19 @@
 Install valedictory using setuptools
 """
 
-from setuptools import setup, find_packages
-
-from valedictory import __version__
+from setuptools import find_packages, setup
 
 with open('README.rst', 'r') as f:
     readme = f.read()
 
+with open('valedictory/version.py', 'r') as f:
+    version = None
+    exec(f.read())
+
+
 setup(
     name='valedictory',
-    version=__version__,
+    version=version,
     description='Validate dicts against a schema',
     long_description=readme,
     author='Tim Heap',
