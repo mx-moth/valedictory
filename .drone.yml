@@ -1,0 +1,8 @@
+build:
+  tests:
+    image: python:3.5
+    environment: XDG_CACHE_HOME=/drone/pip-cache
+    commands:
+      - pip install pip wheel
+      - pip install tox
+      - tox
