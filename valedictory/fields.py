@@ -336,6 +336,9 @@ class DateField(StringField):
 
     .. autoattribute:: default_error_messages
         :annotation:
+
+    .. autoattribute:: formats
+        :annotation:
     """
 
     # YYYY-MM-DD = 10 chars.
@@ -347,15 +350,22 @@ class DateField(StringField):
         'invalid_date': _("Not a valid date"),
     }
 
+    #: The accepted date formats. These must be `datetime.strptime` compatible format strings
+    formats = ['%Y-%m-%d', '%Y%m%d']
+
+    def __init__(self, *args, formats=None, **kwargs):
+        super(DateField, self).__init__(*args, **kwargs)
+        if formats is not None:
+            self.formats = formats
+
     def clean(self, data):
         date_string = super(DateField, self).clean(data)
-
-        try:
-            date = datetime.datetime.strptime(date_string, "%Y-%m-%d").date()
-        except ValueError:
-            raise ValidationException(self.error_messages['invalid_date'])
-
-        return date
+        for format in self.formats:
+            try:
+                return datetime.datetime.strptime(date_string, format).date()
+            except ValueError:
+                pass
+        raise ValidationException(self.error_messages['invalid_date'])
 
 
 class YearMonthField(StringField):

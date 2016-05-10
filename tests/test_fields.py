@@ -181,11 +181,14 @@ class TestDateField(ValidatorTestCase):
             datetime.date(1989, 10, 16),
             field.clean("1989-10-16"))
         self.assertEqual(
+            datetime.date(1989, 10, 16),
+            field.clean("19891016"))
+        self.assertEqual(
             datetime.date(2345, 6, 7),
-            field.clean("2345-06-7"))
+            field.clean("2345-6-7"))
 
     def test_invalid_dates(self):
-        field = EmailField(max_length=10)
+        field = DateField()
 
         # No leap year this year
         with self.assertRaises(ValidationException):
@@ -204,6 +207,14 @@ class TestDateField(ValidatorTestCase):
         # wat r u doin?
         with self.assertRaises(ValidationException):
             field.clean("Not even a date")
+
+    def test_different_formats(self):
+        field = DateField(formats=['%d/%m/%Y'])
+        self.assertEqual(
+            datetime.date(2345, 6, 7),
+            field.clean("7/6/2345"))
+        with self.assertRaises(ValidationException):
+            field.clean('2345-06-07')
 
 
 class TestYearMonthField(ValidatorTestCase):
