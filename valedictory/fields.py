@@ -59,7 +59,8 @@ class Field(object):
 
         If there is no data for the field,
         pass in the :exc:`~valedictory.exceptions.NoData` class to signal this.
-        If the field is required, a :exc:`~valedictory.exceptions.ValidationException` will be raised.
+        If the field is required, a
+        :exc:`~valedictory.exceptions.ValidationException` will be raised.
         If the field is not required, :exc:`~valedictory.exceptions.NoData` is returned.
         """
         if data is NoData:
