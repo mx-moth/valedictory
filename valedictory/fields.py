@@ -1,10 +1,11 @@
 import datetime
 import re
-
 from gettext import gettext as _
 
+import iso8601
+
 from .exceptions import (
-    BaseValidationException, InvalidDataException, ValidationException, NoData)
+    BaseValidationException, InvalidDataException, NoData, ValidationException)
 
 
 class Field(object):
@@ -298,6 +299,33 @@ class EmailField(StringField):
         if not self.email_re.match(value):
             raise ValidationException(self.error_messages['invalid_email'])
         return value
+
+
+class DateTimeField(StringField):
+    """
+    A field that only accepts ISO 8601 date time strings.
+
+    After cleaning, a ``datetime.datetime`` instance is returned.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
+    """
+
+    # YYYY-MM-DDTHH:MM:SS.ssssss+00:00 = 32 chars.
+    max_length = 32
+
+    #: invalid_date
+    #:     Raised when the input is not a valid ISO8601-formatted date time
+    default_error_messages = {
+        'invalid_date': _("Not a valid date time"),
+    }
+
+    def clean(self, data):
+        date_string = super(DateTimeField, self).clean(data)
+        try:
+            return iso8601.parse_date(date_string)
+        except iso8601.ParseError:
+            raise ValidationException(self.error_messages['invalid_date'])
 
 
 class DateField(StringField):

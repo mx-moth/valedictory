@@ -22,7 +22,9 @@ setup(
     author_email='tim@timheap.me',
     url='https://bitbucket.org/tim_heap/valedictory/',
 
-    install_requires=[],
+    install_requires=[
+        'iso8601==0.1.11',
+    ],
     zip_safe=False,
     license='BSD License',
 

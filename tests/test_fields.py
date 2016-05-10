@@ -1,14 +1,12 @@
 import datetime
 
 from valedictory import Validator
-
 from valedictory.exceptions import (
-    ValidationException, InvalidDataException, NoData)
-
+    InvalidDataException, NoData, ValidationException)
 from valedictory.fields import (
-    Field, StringField, BooleanField, IntegerField, EmailField, DateField,
-    YearMonthField, ChoiceField, ChoiceMapField, DigitField, CreditCardField,
-    ListField, NestedValidator)
+    BooleanField, ChoiceField, ChoiceMapField, CreditCardField, DateField,
+    DateTimeField, DigitField, EmailField, Field, IntegerField, ListField,
+    NestedValidator, StringField, YearMonthField)
 
 from .utils import ValidatorTestCase
 
@@ -143,6 +141,36 @@ class TestEmailField(ValidatorTestCase):
         field = EmailField()
         with self.assertRaises(ValidationException):
             field.clean(10)
+
+
+class TestDateTimeField(ValidatorTestCase):
+
+    def test_simple(self):
+        field = DateTimeField()
+        # This uses the iso8601 library directly, which has its own tests.
+        # Assuming its tests are good, we dont need to do much.
+        self.assertEqual(
+            datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
+            field.clean("1989-10-16T08:23:45"))
+
+        self.assertEqual(
+            datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
+            field.clean("1989-10-16 08:23:45Z"))
+
+        self.assertEqual(
+            datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
+            field.clean("19891016T082345+0000"))
+
+    def test_invalid_dates(self):
+        field = DateTimeField()
+
+        # No leap year this year
+        with self.assertRaises(ValidationException):
+            field.clean("2015-02-29T10:11:12")
+
+        # wat r u doin?
+        with self.assertRaises(ValidationException):
+            field.clean("Not even a date")
 
 
 class TestDateField(ValidatorTestCase):
