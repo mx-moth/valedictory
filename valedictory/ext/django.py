@@ -7,7 +7,6 @@ from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import URLValidator
 from django.db.models import Model
 from django.utils.translation import ugettext_lazy as _
-
 from valedictory import fields
 from valedictory.exceptions import ValidationException
 
