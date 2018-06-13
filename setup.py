@@ -20,7 +20,12 @@ setup(
     long_description=readme,
     author='Tim Heap',
     author_email='tim@timheap.me',
-    url='https://bitbucket.org/tim_heap/valedictory/',
+    url='https://github.com/timheap/valedictory/',
+    project_urls={
+        "Bug Tracker": 'https://github.com/timheap/valedictory/issues',
+        "Documentation": 'https://valedictory.readthedocs.io',
+        "Source Code": 'https://github.com/timheap/valedictory',
+    },
 
     install_requires=[
         'aniso8601~=3.0.0',
