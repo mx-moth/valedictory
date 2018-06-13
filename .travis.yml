@@ -6,20 +6,14 @@ sudo: false
 
 matrix:
   include:
-   - env: TOXENV=py34-dj18
+   - env: TOXENV=py34-dj{111,20}
      python: 3.4
-   - env: TOXENV=py35-dj19
+   - env: TOXENV=py35-dj{111,20}
      python: 3.5
-   - env: TOXENV=py34-dj18
-     python: 3.4
-   - env: TOXENV=py35-dj19
-     python: 3.5
-   - env: TOXENV=flake8
-     python: 3.5
-   - env: TOXENV=isort
-     python: 3.5
-   - env: TOXENV=docs
-     python: 3.5
+   - env: TOXENV=py36-dj{111,20}
+     python: 3.6
+   - env: TOXENV=flake8,isort,docs
+     python: 3.6
 
 # Package installation
 install:
