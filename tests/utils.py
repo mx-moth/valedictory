@@ -1,4 +1,5 @@
 import unittest
+
 from valedictory.exceptions import InvalidDataException
 
 

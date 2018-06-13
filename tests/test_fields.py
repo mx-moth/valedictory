@@ -275,7 +275,7 @@ class TestChoiceField(ValidatorTestCase):
 class TestChoiceMapField(ValidatorTestCase):
 
     def test_simple(self):
-        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        choices = {"foo": "bar", 2: 3, True: False, None: {"hello": "world"}}
         field = ChoiceMapField(choices)
         for data, cleaned_data in choices.items():
             self.assertEqual(
@@ -283,7 +283,7 @@ class TestChoiceMapField(ValidatorTestCase):
                 field.clean(data))
 
     def test_invalid(self):
-        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        choices = {"foo": "bar", 2: 3, True: False, None: {"hello": "world"}}
         invalid_choices = ["nope", 11, {}, []]
         field = ChoiceMapField(choices)
         for choice in invalid_choices:

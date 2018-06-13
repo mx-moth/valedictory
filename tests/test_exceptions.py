@@ -1,6 +1,5 @@
 from valedictory import Validator, fields
-from valedictory.exceptions import (
-    InvalidDataException, ValidationException)
+from valedictory.exceptions import InvalidDataException, ValidationException
 
 from .utils import ValidatorTestCase
 
@@ -47,7 +46,8 @@ class TestInvalidDataException(ValidatorTestCase):
                 1: [ValidationException('This field must be a object')],
                 2: [InvalidDataException({
                     'code': [ValidationException('Minimum length 6')],
-                    'quantity': [ValidationException('This must be equal to or greater than the minimum of 1')],
+                    'quantity': [ValidationException(
+                        'This must be equal to or greater than the minimum of 1')],
                 })],
                 3: [InvalidDataException({
                     'unknown': [ValidationException('Unknown field')],
