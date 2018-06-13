@@ -2,7 +2,7 @@ import datetime
 import re
 from gettext import gettext as _
 
-import iso8601
+import aniso8601
 
 from .exceptions import (
     BaseValidationException, InvalidDataException, NoData, ValidationException)
@@ -308,6 +308,9 @@ class DateTimeField(StringField):
 
     After cleaning, a ``datetime.datetime`` instance is returned.
 
+    .. autoattribute:: timezone_required
+        :annotation:
+
     .. autoattribute:: default_error_messages
         :annotation:
     """
@@ -315,18 +318,38 @@ class DateTimeField(StringField):
     # YYYY-MM-DDTHH:MM:SS.ssssss+00:00 = 32 chars.
     max_length = 32
 
+    #: If a timezone is required. If this is ``False``, naive datetimes will be
+    #: allowed.
+    timezone_required = True
+
     #: invalid_date
     #:     Raised when the input is not a valid ISO8601-formatted date time
+    #: no_timezone
+    #:     Raised when the input does not have a timezone specified, but
+    #:     :attr:`timezone_required` is ``True``
     default_error_messages = {
         'invalid_date': _("Not a valid date time"),
+        'no_timezone': _("A timezone must be specified"),
     }
+
+    def __init__(self, *, timezone_required=None, **kwargs):
+        super().__init__(**kwargs)
+
+        if timezone_required is not None:
+            self.timezone_required = timezone_required
 
     def clean(self, data):
         date_string = super(DateTimeField, self).clean(data)
+
         try:
-            return iso8601.parse_date(date_string)
-        except iso8601.ParseError:
+            value = aniso8601.parse_datetime(date_string)
+        except (ValueError, NotImplementedError):
             raise ValidationException(self.error_messages['invalid_date'])
+
+        if self.timezone_required and value.tzinfo is None:
+            raise ValidationException(self.error_messages['no_timezone'])
+
+        return value
 
 
 class DateField(StringField):
@@ -336,9 +359,6 @@ class DateField(StringField):
     After cleaning, a ``datetime.date`` instance is returned.
 
     .. autoattribute:: default_error_messages
-        :annotation:
-
-    .. autoattribute:: formats
         :annotation:
     """
 
@@ -351,22 +371,62 @@ class DateField(StringField):
         'invalid_date': _("Not a valid date"),
     }
 
-    #: The accepted date formats. These must be `datetime.strptime` compatible format strings
-    formats = ['%Y-%m-%d', '%Y%m%d']
-
-    def __init__(self, *args, formats=None, **kwargs):
-        super(DateField, self).__init__(*args, **kwargs)
-        if formats is not None:
-            self.formats = formats
-
     def clean(self, data):
         date_string = super(DateField, self).clean(data)
-        for format in self.formats:
-            try:
-                return datetime.datetime.strptime(date_string, format).date()
-            except ValueError:
-                pass
-        raise ValidationException(self.error_messages['invalid_date'])
+        try:
+            return aniso8601.parse_date(date_string)
+        except ValueError:
+            raise ValidationException(self.error_messages['invalid_date'])
+
+
+class TimeField(StringField):
+    """
+    A field that only accepts ISO 8601 time strings.
+
+    After cleaning, a ``datetime.datetime`` instance is returned.
+
+    .. autoattribute:: timezone_required
+        :annotation:
+
+    .. autoattribute:: default_error_messages
+        :annotation:
+    """
+
+    # HH:MM:SS.ssssss+00:00 = 11 chars.
+    max_length = 21
+
+    #: If a timezone is required. If this is ``False``, naive times will be
+    #: allowed.
+    timezone_required = True
+
+    #: invalid_date
+    #:     Raised when the input is not a valid ISO8601-formatted date time
+    #: no_timezone
+    #:     Raised when the input does not have a timezone specified, but
+    #:     :attr:`timezone_required` is ``True``
+    default_error_messages = {
+        'invalid_time': _("Not a valid time"),
+        'no_timezone': _("A timezone must be specified"),
+    }
+
+    def __init__(self, *, timezone_required=None, **kwargs):
+        super().__init__(**kwargs)
+
+        if timezone_required is not None:
+            self.timezone_required = timezone_required
+
+    def clean(self, data):
+        time_string = super(DateTimeField, self).clean(data)
+
+        try:
+            value = aniso8601.parse_time(time_string)
+        except (ValueError, NotImplementedError):
+            raise ValidationException(self.error_messages['invalid_time'])
+
+        if self.timezone_required and value.tzinfo is None:
+            raise ValidationException(self.error_messages['no_timezone'])
+
+        return value
 
 
 class YearMonthField(StringField):

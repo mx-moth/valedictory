@@ -23,7 +23,7 @@ setup(
     url='https://bitbucket.org/tim_heap/valedictory/',
 
     install_requires=[
-        'iso8601==0.1.11',
+        'aniso8601~=3.0.0',
     ],
     zip_safe=False,
     license='BSD License',
