@@ -23,6 +23,9 @@ class ForeignKeyField(fields.TypedField):
     """
     Accepts foreign keys to a Django model, and returns the model instance when
     cleaned.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
     type_name = 'foreign key'
 

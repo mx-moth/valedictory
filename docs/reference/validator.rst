@@ -48,6 +48,8 @@ Validator
     This is useful for one-off validators,
     or with a :class:`~valedictory.fields.NestedValidator`.
 
+    **Attributes**
+
     .. autoattribute:: allow_unknown_fields
 
         Whether unknown fields in the data should be treated as an error, or ignored.
@@ -63,11 +65,18 @@ Validator
         A dictionary of all the fields on this validator
 
     .. autoattribute:: default_error_messages
-        :annotation: = {error: "Error message"}
+        :annotation: = {'error': "Error message"}
 
         A dictionary of strings for each error message that can be thrown.
         You can override error messages by overriding this dictionary.
         Only the error messages being overridden need to be set,
         other error messages will be taken from the parent classes.
 
+        unknown
+            Thrown when an unknown key is present in the data being validated
+            and :attr:`allow_unknown_fields` is ``True``.
+
+    **Methods**
+
     .. automethod:: clean
+    .. automethod:: error

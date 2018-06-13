@@ -368,14 +368,14 @@ class DateField(StringField):
         try:
             return aniso8601.parse_date(date_string)
         except ValueError:
-            raise ValidationException(self.error_messages['invalid_date'])
+            raise self.error('invalid_format')
 
 
 class TimeField(StringField):
     """
     A field that only accepts ISO 8601 time strings.
 
-    After cleaning, a ``datetime.datetime`` instance is returned.
+    After cleaning, a ``datetime.time`` instance is returned.
 
     .. autoattribute:: timezone_required
         :annotation:
@@ -496,11 +496,16 @@ class ChoiceMapField(Field):
     A field that only accepts values from a predefined dictionary of choices.
     The dictionary maps from valid input choices to the cleaned value returned.
 
-    For example, a :class:`ChoiceMapField` such as:
+    For example:
 
     .. code:: python
 
-        ChoiceMapField({1: 'one', 2: 'two', 3: 'three'})
+        >>> field = ChoiceMapField({1: 'one', 2: 'two', 3: 'three'})
+        >>> field.clean(1)
+        'one'
+        >>> field.clean("one")
+        valedictory.exceptions.ValidationException: Not a valid choice
+
 
     would only accept one of the numbers 1, 2 or 3 as input,
     and would return one of the strings "one", "two", or "three".
