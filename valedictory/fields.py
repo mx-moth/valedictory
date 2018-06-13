@@ -17,7 +17,6 @@ class Field(ErrorMessageMixin):
     **Attributes**
 
     .. autoattribute:: required
-        :annotation:
 
     .. autoattribute:: default_error_messages
         :annotation:

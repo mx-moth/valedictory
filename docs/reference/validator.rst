@@ -1,5 +1,3 @@
-.. _validator:
-
 .. module:: valedictory
 
 Validator

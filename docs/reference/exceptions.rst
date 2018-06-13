@@ -1,5 +1,3 @@
-.. _exceptions:
-
 ==========
 Exceptions
 ==========
