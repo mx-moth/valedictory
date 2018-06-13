@@ -9,13 +9,14 @@ with open('README.rst', 'r') as f:
     readme = f.read()
 
 with open('valedictory/version.py', 'r') as f:
-    version = None
+    version_string = None
     exec(f.read())
+    assert version_string is not None
 
 
 setup(
     name='valedictory',
-    version=version,
+    version=version_string,
     description='Validate dicts against a schema',
     long_description=readme,
     author='Tim Heap',
