@@ -20,10 +20,15 @@ setup(
     long_description=readme,
     author='Tim Heap',
     author_email='tim@timheap.me',
-    url='https://bitbucket.org/tim_heap/valedictory/',
+    url='https://github.com/timheap/valedictory/',
+    project_urls={
+        "Bug Tracker": 'https://github.com/timheap/valedictory/issues',
+        "Documentation": 'https://valedictory.readthedocs.io',
+        "Source Code": 'https://github.com/timheap/valedictory',
+    },
 
     install_requires=[
-        'iso8601==0.1.11',
+        'aniso8601~=3.0.0',
     ],
     zip_safe=False,
     license='BSD License',
@@ -41,6 +46,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Framework :: Django',
         'License :: OSI Approved :: BSD License',
     ],

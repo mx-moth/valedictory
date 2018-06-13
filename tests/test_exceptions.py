@@ -1,6 +1,5 @@
 from valedictory import Validator, fields
-from valedictory.exceptions import (
-    InvalidDataException, ValidationException)
+from valedictory.exceptions import InvalidDataException, ValidationException
 
 from .utils import ValidatorTestCase
 
@@ -14,9 +13,9 @@ class TestInvalidDataException(ValidatorTestCase):
         errors = cm.exception
 
         expected_errors = InvalidDataException({
-            'int': [ValidationException('This field must be a integer')],
-            'string': [ValidationException('This field is required')],
-            'unknown': [ValidationException('Unknown field')]})
+            'int': [ValidationException("This field must be a integer", 'invalid_type')],
+            'string': [ValidationException("This field is required", 'required')],
+            'unknown': [ValidationException("Unknown field", 'unknown')]})
         self.assertEqual(errors, expected_errors)
 
     def test_nested_errors(self):
@@ -42,15 +41,16 @@ class TestInvalidDataException(ValidatorTestCase):
         errors = cm.exception
 
         self.assertEqual(errors, InvalidDataException({
-            'name': [ValidationException('This field is required')],
+            'name': [ValidationException('This field is required', 'required')],
             'items': [InvalidDataException({
-                1: [ValidationException('This field must be a object')],
+                1: [ValidationException('This field must be a object', 'invalid_type')],
                 2: [InvalidDataException({
-                    'code': [ValidationException('Minimum length 6')],
-                    'quantity': [ValidationException('This must be equal to or greater than the minimum of 1')],
+                    'code': [ValidationException('Minimum length 6', 'min_length')],
+                    'quantity': [ValidationException(
+                        'This must be equal to or greater than the minimum of 1', 'min_value')],
                 })],
                 3: [InvalidDataException({
-                    'unknown': [ValidationException('Unknown field')],
+                    'unknown': [ValidationException('Unknown field', 'unknown')],
                 })],
             })],
         }))
@@ -59,10 +59,10 @@ class TestInvalidDataException(ValidatorTestCase):
 class TestFlatten(ValidatorTestCase):
     def test_one_level(self):
         errors = InvalidDataException({
-            'foo': [ValidationException("foo error")],
+            'foo': [ValidationException("foo error", 'foo')],
             'bar': [
-                ValidationException("bar error 1"),
-                ValidationException("bar error 2"),
+                ValidationException("bar error 1", 'bar_1'),
+                ValidationException("bar error 2", 'bar_2'),
             ],
         })
 
@@ -73,13 +73,13 @@ class TestFlatten(ValidatorTestCase):
 
     def test_nested_dict_errors(self):
         errors = InvalidDataException({
-            'foo': [ValidationException("foo error")],
+            'foo': [ValidationException("foo error", 'foo')],
             'bar': [InvalidDataException({
                 'baz': [
-                    ValidationException("bar baz error 1"),
-                    ValidationException("bar baz error 2"),
+                    ValidationException("bar baz error 1", 'baz_1'),
+                    ValidationException("bar baz error 2", 'baz_2'),
                 ],
-                'quux': [ValidationException("bar quux error")],
+                'quux': [ValidationException("bar quux error", 'quux')],
             })],
         })
 
@@ -91,10 +91,10 @@ class TestFlatten(ValidatorTestCase):
 
     def test_nested_list_errors(self):
         errors = InvalidDataException({
-            'foo': [ValidationException("foo error")],
+            'foo': [ValidationException("foo error", 'foo')],
             'bar': [InvalidDataException({
-                1: [ValidationException("bar 1 error")],
-                3: [ValidationException("bar 3 error")],
+                1: [ValidationException("bar 1 error", 'bar_1')],
+                3: [ValidationException("bar 3 error", 'bar_3')],
             })],
         })
 

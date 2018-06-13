@@ -1,5 +1,3 @@
-.. _fields:
-
 ======
 Fields
 ======
@@ -37,10 +35,20 @@ EmailField
 
 .. autoclass:: EmailField
 
+DateTimeField
+=============
+
+.. autoclass:: DateTimeField
+
 DateField
 =========
 
 .. autoclass:: DateField
+
+TimeField
+=========
+
+.. autoclass:: TimeField
 
 YearMonthField
 ==============

@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-
 from django.test import TestCase as DjangoTestCase
 
-from valedictory.exceptions import (
-    ValidationException, NoData)
-from valedictory.ext.django import URLField, ForeignKeyField
+from valedictory.exceptions import NoData, ValidationException
+from valedictory.ext.django import ForeignKeyField, URLField
 
 from ...utils import ValidatorTestCase
 from .models import TestModel

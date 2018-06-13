@@ -1,4 +1,3 @@
-from __future__ import absolute_import, unicode_literals
 from collections import defaultdict
 
 
@@ -71,9 +70,10 @@ class InvalidDataException(BaseValidationException):
         errors.
 
         If validator was constructed for a shopping cart, which had user
-        details and a list of items in a shopping cart, made using a
-        NestedValidator inside a ListField, some possible flattened errors
-        might be:
+        details and a list of items in a shopping cart,
+        made using a :class:`~valedictory.fields.NestedValidator`
+        inside a :class:`~valedictory.fields.ListField`,
+        some possible flattened errors might be:
 
         >>> list(errors.flatten())
         [
@@ -96,29 +96,39 @@ class ValidationException(BaseValidationException):
 
     .. autoattribute:: msg
         :annotation:
+
+    .. autoattribute:: code
+        :annotation:
     """
 
-    #: The validation error as a human readable string.
+    #: The validation error as a human readable string. This error is
+    #: translatable via gettext, and should not be used for checking the type
+    #: of error
     msg = None
 
-    def __init__(self, message, **kwargs):
+    #: The validation error code as a string. This can be used to check the
+    #: type of error
+    code = None
+
+    def __init__(self, message, code, **kwargs):
         self.msg = message
+        self.code = code
         super(ValidationException, self).__init__(message, **kwargs)
 
     def __str__(self):
-        return '{cls}: {msg}'.format(cls=self.__class__.__name__,
-                                     msg=self.msg)
+        return self.msg
 
     def __repr__(self):
-        return '<{str}>'.format(str=self)
+        return '<{cls}: ({code}) {msg}>'.format(
+            cls=type(self).__name__, code=self.code, msg=self.msg)
 
     def __eq__(self, other):
         if not isinstance(other, ValidationException):
             return NotImplemented
-        return self.msg == other.msg
+        return self.code == other.code
 
     def __hash__(self):
-        return hash(self.msg)
+        return hash(self.code)
 
 
 class NoData(BaseValidationException):

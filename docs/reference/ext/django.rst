@@ -1,5 +1,3 @@
-.. _ext/django:
-
 =============
 Django fields
 =============

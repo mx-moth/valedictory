@@ -147,26 +147,34 @@ class TestDateTimeField(ValidatorTestCase):
 
     def test_simple(self):
         field = DateTimeField()
-        # This uses the iso8601 library directly, which has its own tests.
+        # This uses the aniso8601 library directly, which has its own tests.
         # Assuming its tests are good, we dont need to do much.
         self.assertEqual(
             datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
-            field.clean("1989-10-16T08:23:45"))
-
-        self.assertEqual(
-            datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
-            field.clean("1989-10-16 08:23:45Z"))
+            field.clean("1989-10-16T08:23:45Z"))
 
         self.assertEqual(
             datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=datetime.timezone.utc),
             field.clean("19891016T082345+0000"))
+
+    def test_timezone_required(self):
+        field = DateTimeField()
+        # Timezones are required by default
+        with self.assertRaises(ValidationException):
+            field.clean("1989-10-16T08:23:45")
+
+    def test_optional_timezone(self):
+        field = DateTimeField(timezone_required=False)
+        self.assertEqual(
+            datetime.datetime(1989, 10, 16, 8, 23, 45, tzinfo=None),
+            field.clean("1989-10-16T08:23:45"))
 
     def test_invalid_dates(self):
         field = DateTimeField()
 
         # No leap year this year
         with self.assertRaises(ValidationException):
-            field.clean("2015-02-29T10:11:12")
+            field.clean("2015-02-29T10:11:12Z")
 
         # wat r u doin?
         with self.assertRaises(ValidationException):
@@ -185,7 +193,15 @@ class TestDateField(ValidatorTestCase):
             field.clean("19891016"))
         self.assertEqual(
             datetime.date(2345, 6, 7),
-            field.clean("2345-6-7"))
+            field.clean("2345-06-07"))
+
+        # Test partial dates, valid in ISO8601
+        self.assertEqual(
+            datetime.date(2018, 2, 1),
+            field.clean("2018-02"))
+        self.assertEqual(
+            datetime.date(2018, 1, 1),
+            field.clean("2018"))
 
     def test_invalid_dates(self):
         field = DateField()
@@ -207,14 +223,6 @@ class TestDateField(ValidatorTestCase):
         # wat r u doin?
         with self.assertRaises(ValidationException):
             field.clean("Not even a date")
-
-    def test_different_formats(self):
-        field = DateField(formats=['%d/%m/%Y'])
-        self.assertEqual(
-            datetime.date(2345, 6, 7),
-            field.clean("7/6/2345"))
-        with self.assertRaises(ValidationException):
-            field.clean('2345-06-07')
 
 
 class TestYearMonthField(ValidatorTestCase):
@@ -267,7 +275,7 @@ class TestChoiceField(ValidatorTestCase):
 class TestChoiceMapField(ValidatorTestCase):
 
     def test_simple(self):
-        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        choices = {"foo": "bar", 2: 3, True: False, None: {"hello": "world"}}
         field = ChoiceMapField(choices)
         for data, cleaned_data in choices.items():
             self.assertEqual(
@@ -275,7 +283,7 @@ class TestChoiceMapField(ValidatorTestCase):
                 field.clean(data))
 
     def test_invalid(self):
-        choices = {"foo": "bar", 1: 2, True: False, None: {"hello": "world"}}
+        choices = {"foo": "bar", 2: 3, True: False, None: {"hello": "world"}}
         invalid_choices = ["nope", 11, {}, []]
         field = ChoiceMapField(choices)
         for choice in invalid_choices:
