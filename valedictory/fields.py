@@ -4,11 +4,11 @@ from gettext import gettext as _
 
 import aniso8601
 
-from .exceptions import (
-    BaseValidationException, InvalidDataException, NoData, ValidationException)
+from .base import ErrorMessageMixin
+from .exceptions import BaseValidationException, InvalidDataException, NoData
 
 
-class Field(object):
+class Field(ErrorMessageMixin):
     """
     The base class for all fields.
     By itself, :class:`~Field` only enforces the :attr:`Field.required` behaviour.
@@ -25,6 +25,7 @@ class Field(object):
     **Methods**
 
     .. automethod:: clean
+    .. automethod:: error
     """
 
     #: Is this field required to be present in the data.
@@ -36,22 +37,19 @@ class Field(object):
     required = True
 
     #: A dictionary of messages for each error this field can raise.
+    #: The default error messages can be overridden by passing an ``error_messages`` dict
+    #: to the constructor.
     #:
     #: required
     #:     Raised when the field is not in the input data,
     #:     but the field is required.
     default_error_messages = {
-        "required": _("This field is required"),
+        'required': _("This field is required"),
     }
 
-    def __init__(self, required=True, error_messages=None):
+    def __init__(self, required=True, error_messages=None, **kwargs):
+        super().__init__(error_messages=error_messages, **kwargs)
         self.required = required
-
-        messages = {}
-        for c in reversed(self.__class__.__mro__):
-            messages.update(getattr(c, 'default_error_messages', {}))
-        messages.update(error_messages or {})
-        self.error_messages = messages
 
     def clean(self, data):
         """
@@ -65,7 +63,7 @@ class Field(object):
         """
         if data is NoData:
             if self.required:
-                raise ValidationException(self.error_messages['required'])
+                raise self.error('required')
             else:
                 raise NoData
         return data
@@ -108,7 +106,7 @@ class TypedField(Field):
     #:     Raised when the incoming data is not an instance of :attr:`required_types`,
     #:     or is a subclass of :attr:`excluded_types`.
     default_error_messages = {
-        "invalid_type": _("This field must be a {type}"),
+        'invalid_type': _("This field must be a {type}"),
     }
 
     def clean(self, data):
@@ -116,9 +114,7 @@ class TypedField(Field):
 
         if (not isinstance(value, self.required_types) or
                 isinstance(value, self.excluded_types)):
-            raise ValidationException(
-                self.error_messages["invalid_type"].format(
-                    type=self.type_name))
+            raise self.error('invalid_type', {'type': self.type_name})
 
         return value
 
@@ -155,9 +151,9 @@ class StringField(TypedField):
     #: max_length
     #:     Raised when the input is longer than :attr:`max_length`.
     default_error_messages = {
-        "non_empty": "This field can not be empty",
-        "min_length": "Minimum length {0}",
-        "max_length": "Maximum length {0}",
+        'non_empty': _("This field can not be empty"),
+        'min_length': _("Minimum length {min}"),
+        'max_length': _("Maximum length {max}"),
     }
 
     def __init__(self, min_length=None, max_length=None, **kwargs):
@@ -180,18 +176,16 @@ class StringField(TypedField):
     def clean(self, data):
         value = super(StringField, self).clean(data)
         if value == u'' and self.required:
-            raise ValidationException(self.error_messages['required'])
+            raise self.error('required')
 
         if len(value) < self.min_length:
             if self.min_length == 1:
-                raise ValidationException(self.error_messages['non_empty'])
+                raise self.error('non_empty')
             else:
-                raise ValidationException(
-                    self.error_messages['min_length'].format(self.min_length))
+                raise self.error('min_length', {'min': self.min_length})
 
         if len(value) > self.max_length:
-            raise ValidationException(
-                self.error_messages['max_length'].format(self.max_length))
+            raise self.error('max_length', {'max': self.max_length})
 
         return value
 
@@ -237,8 +231,8 @@ class IntegerField(TypedField):
     #: max_value
     #:     Raised when the value is higher than :attr:`max`.
     default_error_messages = {
-        'min_value': _("This must be equal to or greater than the minimum of {0}"),
-        'max_value': _("This must be equal to or less than the maximum of {0}"),
+        'min_value': _("This must be equal to or greater than the minimum of {min}"),
+        'max_value': _("This must be equal to or less than the maximum of {max}"),
     }
 
     def __init__(self, min=None, max=None, *args, **kwargs):
@@ -262,12 +256,10 @@ class IntegerField(TypedField):
         value = super(IntegerField, self).clean(data)
 
         if self.min is not None and value < self.min:
-            raise ValidationException(
-                self.error_messages['min_value'].format(self.min))
+            raise self.error('min_value', {'min': self.min})
 
         if self.max is not None and value > self.max:
-            raise ValidationException(
-                self.error_messages['max_value'].format(self.max))
+            raise self.error('max_value', {'max': self.max})
 
         return value
 
@@ -298,7 +290,7 @@ class EmailField(StringField):
     def clean(self, data):
         value = super(EmailField, self).clean(data)
         if not self.email_re.match(value):
-            raise ValidationException(self.error_messages['invalid_email'])
+            raise self.error('invalid_email')
         return value
 
 
@@ -322,13 +314,13 @@ class DateTimeField(StringField):
     #: allowed.
     timezone_required = True
 
-    #: invalid_date
+    #: invalid_format
     #:     Raised when the input is not a valid ISO8601-formatted date time
     #: no_timezone
     #:     Raised when the input does not have a timezone specified, but
     #:     :attr:`timezone_required` is ``True``
     default_error_messages = {
-        'invalid_date': _("Not a valid date time"),
+        'invalid_format': _("Not a valid date time"),
         'no_timezone': _("A timezone must be specified"),
     }
 
@@ -344,10 +336,10 @@ class DateTimeField(StringField):
         try:
             value = aniso8601.parse_datetime(date_string)
         except (ValueError, NotImplementedError):
-            raise ValidationException(self.error_messages['invalid_date'])
+            raise self.error('invalid_format')
 
         if self.timezone_required and value.tzinfo is None:
-            raise ValidationException(self.error_messages['no_timezone'])
+            raise self.error('no_timezone')
 
         return value
 
@@ -365,10 +357,10 @@ class DateField(StringField):
     # YYYY-MM-DD = 10 chars.
     max_length = 10
 
-    #: invalid_date
+    #: invalid_format
     #:     Raised when the input is not a valid date
     default_error_messages = {
-        'invalid_date': _("Not a valid date"),
+        'invalid_format': _("Not a valid date"),
     }
 
     def clean(self, data):
@@ -399,13 +391,13 @@ class TimeField(StringField):
     #: allowed.
     timezone_required = True
 
-    #: invalid_date
+    #: invalid_format
     #:     Raised when the input is not a valid ISO8601-formatted date time
     #: no_timezone
     #:     Raised when the input does not have a timezone specified, but
     #:     :attr:`timezone_required` is ``True``
     default_error_messages = {
-        'invalid_time': _("Not a valid time"),
+        'invalid_format': _("Not a valid time"),
         'no_timezone': _("A timezone must be specified"),
     }
 
@@ -421,10 +413,10 @@ class TimeField(StringField):
         try:
             value = aniso8601.parse_time(time_string)
         except (ValueError, NotImplementedError):
-            raise ValidationException(self.error_messages['invalid_time'])
+            raise self.error('invalid_format')
 
         if self.timezone_required and value.tzinfo is None:
-            raise ValidationException(self.error_messages['no_timezone'])
+            raise self.error('no_timezone')
 
         return value
 
@@ -434,15 +426,18 @@ class YearMonthField(StringField):
     A field that only accepts ``YYYY-MM`` date strings.
 
     After cleaning, a tuple of ``(year, month)`` integers are returned.
+
+    .. autoattribute:: default_error_messages
+        :annotation:
     """
 
     # YYYY-MM = 7 chars.
     max_length = 7
 
-    #: invalid_date
+    #: invalid_format
     #:     Raised when the input is not a valid year-month tuple
     default_error_messages = {
-        'invalid_date': _("Not a valid date"),
+        'invalid_format': _("Not a valid date"),
     }
 
     def clean(self, data):
@@ -451,7 +446,7 @@ class YearMonthField(StringField):
         try:
             date = datetime.datetime.strptime(date_string, "%Y-%m").date()
         except ValueError:
-            raise ValidationException(self.error_messages['invalid_date'])
+            raise self.error('invalid_format')
 
         return (date.year, date.month)
 
@@ -485,10 +480,10 @@ class ChoiceField(Field):
         value = super(ChoiceField, self).clean(data)
         try:
             if value not in self.choices:
-                raise ValidationException(self.error_messages['invalid_choice'])
+                raise self.error('invalid_choice')
         except TypeError:
-            # {} in set() throws a TypeError: unhashable type: 'dict'
-            raise ValidationException(self.error_messages['invalid_choice'])
+            # ``{} in set()`` throws a TypeError: unhashable type: 'dict'
+            raise self.error('invalid_choice')
 
         return value
 
@@ -536,7 +531,7 @@ class ChoiceMapField(Field):
             return self.choices[value]
         except (KeyError, TypeError):
             # self.choices[{}] throws a TypeError: unhashable type: 'dict'
-            raise ValidationException(self.error_messages['invalid_choice'])
+            raise self.error('invalid_choice')
 
     def __copy__(self, **kwargs):
         return super(ChoiceMapField, self).__copy__(choices=self.choices)
@@ -594,9 +589,9 @@ class PunctuatedCharacterField(TypedField):
     #: max_length
     #:     Raised when the cleaned string is longer than :attr:`max_length`.
     default_error_messages = {
-        "allowed_characters": _("Only the characters '{alphabet}{punctuation}' are allowed"),
-        "min_length": "Minimum length {0}",
-        "max_length": "Maximum length {0}",
+        'allowed_characters': _("Only the characters '{alphabet}{punctuation}' are allowed"),
+        'min_length': _("Minimum length {min}"),
+        'max_length': _("Maximum length {max}"),
     }
 
     def __init__(self, alphabet=None, punctuation=None,
@@ -637,18 +632,15 @@ class PunctuatedCharacterField(TypedField):
         stripped_value = value.translate(alphabet_dict)
 
         if len(stripped_value) != 0:
-            raise ValidationException(
-                self.error_messages['allowed_characters'].format(
-                    alphabet=self.alphabet,
-                    punctuation=self.punctuation))
+            raise self.error('allowed_characters', {
+                'alphabet': self.alphabet,
+                'punctuation': self.punctuation})
 
         if len(value) < self.min_length:
-            raise ValidationException(
-                self.error_messages['min_length'].format(self.min_length))
+            raise self.error('min_length', {'min': self.min_length})
 
         if len(value) > self.max_length:
-            raise ValidationException(
-                self.error_messages['max_length'].format(self.max_length))
+            raise self.error('max_length', {'max': self.max_length})
 
         return value
 
@@ -703,14 +695,14 @@ class CreditCardField(PunctuatedCharacterField):
     #:     Raised when the credit card is not valid,
     #:     according to the Luhn checksum
     default_error_messages = {
-        "luhn_checksum": _("The credit card number is not valid"),
+        'luhn_checksum': _("The credit card number is not valid"),
     }
 
     def clean(self, data):
         value = super(CreditCardField, self).clean(data)
 
         if not self.luhn_checksum(value):
-            raise ValidationException(self.error_messages['luhn_checksum'])
+            raise self.error('luhn_checksum')
 
         return value
 

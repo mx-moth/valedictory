@@ -1,6 +1,6 @@
 from valedictory import InvalidDataException, Validator, fields
-from valedictory.base import partition_dict
 from valedictory.exceptions import ValidationException
+from valedictory.validator import partition_dict
 
 from .utils import ValidatorTestCase
 
@@ -31,7 +31,7 @@ class TestValidators(ValidatorTestCase):
         errors = cm.exception
         self.assertEqual(['nope'], sorted(errors.invalid_fields.keys()))
         self.assertEqual(errors, InvalidDataException({
-            'nope': [ValidationException('Unknown field')]}))
+            'nope': [ValidationException('Unknown field', 'unknown')]}))
 
     def test_unknown_fields_allowed(self):
         """

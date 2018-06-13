@@ -9,7 +9,6 @@ from django.db.models import Model
 from django.utils.translation import ugettext_lazy as _
 
 from valedictory import fields
-from valedictory.exceptions import ValidationException
 
 
 class UploadedFileField(fields.TypedField):
@@ -60,9 +59,9 @@ class ForeignKeyField(fields.TypedField):
         try:
             return queryset.get(**{self.field: value})
         except model.DoesNotExist:
-            raise ValidationException(self.error_messages['missing'])
+            raise self.error('missing')
         except model.MultipleObjectsReturned:
-            raise ValidationException(self.error_messages['multiple'])
+            raise self.error('multiple')
 
     def __copy__(self, **kwargs):
         return super(ForeignKeyField, self).__copy__(
@@ -84,5 +83,5 @@ class URLField(fields.StringField):
         try:
             self.validator(value)
         except ValidationError:
-            raise ValidationException(self.error_messages['invalid_url'])
+            raise self.error('invalid_url')
         return value
