@@ -25,10 +25,20 @@ BooleanField
 
 .. autoclass:: BooleanField
 
+NumberField
+===========
+
+.. autoclass:: NumberField
+
 IntegerField
 ============
 
 .. autoclass:: IntegerField
+
+FloatField
+==========
+
+.. autoclass:: FloatField
 
 EmailField
 ==========

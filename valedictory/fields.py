@@ -1,5 +1,6 @@
 import datetime
 import re
+from decimal import Decimal
 from gettext import gettext as _
 
 import aniso8601
@@ -105,7 +106,7 @@ class TypedField(Field):
     #:     Raised when the incoming data is not an instance of :attr:`required_types`,
     #:     or is a subclass of :attr:`excluded_types`.
     default_error_messages = {
-        'invalid_type': _("This field must be a {type}"),
+        'invalid_type': _("Expected a value of type '{type}'"),
     }
 
     def clean(self, data):
@@ -201,9 +202,9 @@ class BooleanField(TypedField):
     type_name = u'boolean'
 
 
-class IntegerField(TypedField):
+class NumberField(TypedField):
     """
-    A field that only accepts integer values.
+    A field that only accepts numbers, either floats or integers.
 
     .. autoattribute:: min
 
@@ -212,9 +213,9 @@ class IntegerField(TypedField):
     .. autoattribute:: default_error_messages
         :annotation:
     """
-    required_types = int
+    required_types = (int, float, Decimal, complex)
     excluded_types = bool  # bools subclass ints :(
-    type_name = u'integer'
+    type_name = u'number'
 
     #: The minimum allowable value. Values lower than this will raise an exception.
     #: Defaults to no minimum value.
@@ -224,6 +225,7 @@ class IntegerField(TypedField):
     #: Defaults to no maximum value.
     max = None
 
+    #:
     #: min_value
     #:     Raised when the value is lower than :attr:`min`.
     #:
@@ -234,17 +236,15 @@ class IntegerField(TypedField):
         'max_value': _("This must be equal to or less than the maximum of {max}"),
     }
 
-    def __init__(self, min=None, max=None, *args, **kwargs):
+    def __init__(self, min=None, max=None, **kwargs):
         """
-        Construct a field that accepts only integers.
-
         In addition to the arguments accepted by the ``Field`` class, the
         following arguments are accepted:
 
         * The ``min`` and ``max`` keyword arguments set the minimum and maximum
           value the field will accept. The range is inclusive.
         """
-        super(IntegerField, self).__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         if min is not None:
             self.min = min
 
@@ -252,7 +252,7 @@ class IntegerField(TypedField):
             self.max = max
 
     def clean(self, data):
-        value = super(IntegerField, self).clean(data)
+        value = super().clean(data)
 
         if self.min is not None and value < self.min:
             raise self.error('min_value', {'min': self.min})
@@ -265,6 +265,23 @@ class IntegerField(TypedField):
     def __copy__(self, **kwargs):
         return super(IntegerField, self).__copy__(min=self.min,
                                                   max=self.max)
+
+
+class IntegerField(NumberField):
+    """
+    A :class:`NumberField` that only accepts integers.
+    """
+    required_types = int
+    excluded_types = bool  # bools subclass ints :(
+    type_name = u'integer'
+
+
+class FloatField(NumberField):
+    """
+    A :class:`NumberField` that only accepts floating point numbers.
+    """
+    required_types = float
+    type_name = u'float'
 
 
 class EmailField(StringField):

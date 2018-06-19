@@ -1,12 +1,14 @@
 import datetime
+import math
+import sys
 
 from valedictory import Validator
 from valedictory.exceptions import (
     InvalidDataException, NoData, ValidationException)
 from valedictory.fields import (
     BooleanField, ChoiceField, ChoiceMapField, CreditCardField, DateField,
-    DateTimeField, DigitField, EmailField, Field, IntegerField, ListField,
-    NestedValidator, StringField, YearMonthField)
+    DateTimeField, DigitField, EmailField, Field, FloatField, IntegerField,
+    ListField, NestedValidator, NumberField, StringField, YearMonthField)
 
 from .utils import ValidatorTestCase
 
@@ -85,6 +87,26 @@ class TestBooleanField(ValidatorTestCase):
             field.clean("true")
 
 
+class TestNumberField(ValidatorTestCase):
+
+    def test_simple(self):
+        field = NumberField()
+        self.assertEqual(-10, field.clean(-10))
+        self.assertEqual(0.1, field.clean(0.1))
+        self.assertEqual(42, field.clean(42))
+        self.assertTrue(math.isnan(field.clean(float('nan'))))
+        self.assertEqual(sys.maxsize ** 2, field.clean(sys.maxsize ** 2))
+
+    def test_invalid_type(self):
+        field = NumberField()
+        with self.assertRaises(ValidationException):
+            field.clean("Hello")
+        with self.assertRaises(ValidationException):
+            field.clean("10")
+        with self.assertRaises(ValidationException):
+            field.clean(True)
+
+
 class TestIntegerField(ValidatorTestCase):
 
     def test_simple(self):
@@ -92,9 +114,12 @@ class TestIntegerField(ValidatorTestCase):
         self.assertEqual(-10, field.clean(-10))
         self.assertEqual(0, field.clean(0))
         self.assertEqual(42, field.clean(42))
+        self.assertEqual(sys.maxsize ** 2, field.clean(sys.maxsize ** 2))
 
     def test_floats(self):
         field = IntegerField()
+        with self.assertRaises(ValidationException):
+            field.clean(0.0)
         with self.assertRaises(ValidationException):
             field.clean(1.0)
         with self.assertRaises(ValidationException):
@@ -102,6 +127,35 @@ class TestIntegerField(ValidatorTestCase):
 
     def test_invalid_type(self):
         field = IntegerField()
+        with self.assertRaises(ValidationException):
+            field.clean("Hello")
+        with self.assertRaises(ValidationException):
+            field.clean("10")
+        with self.assertRaises(ValidationException):
+            field.clean(True)
+
+
+class TestFloatField(ValidatorTestCase):
+
+    def test_simple(self):
+        field = FloatField()
+        self.assertEqual(-1.5, field.clean(-1.5))
+        self.assertEqual(0.0, field.clean(0.0))
+        self.assertEqual(123e4, field.clean(123e4))
+
+    def test_integers(self):
+        field = FloatField()
+        with self.assertRaises(ValidationException):
+            field.clean(1)
+        with self.assertRaises(ValidationException):
+            field.clean(0)
+        with self.assertRaises(ValidationException):
+            field.clean(-10)
+        with self.assertRaises(ValidationException):
+            field.clean(sys.maxsize ** 2)
+
+    def test_invalid_type(self):
+        field = FloatField()
         with self.assertRaises(ValidationException):
             field.clean("Hello")
         with self.assertRaises(ValidationException):
