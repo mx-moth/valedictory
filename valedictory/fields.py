@@ -109,6 +109,17 @@ class TypedField(Field):
         'invalid_type': _("Expected a value of type '{type}'"),
     }
 
+    def __init__(self, *, required_types=None, excluded_types=None,
+                 type_name=None, **kwargs):
+        super().__init__(**kwargs)
+
+        if required_types is not None:
+            self.required_types = required_types
+        if required_types is not None:
+            self.required_types = required_types
+        if type_name is not None:
+            self.type_name = type_name
+
     def clean(self, data):
         value = super(TypedField, self).clean(data)
 
@@ -756,7 +767,7 @@ class ListField(TypedField):
     required_types = list
     type_name = 'list'
 
-    def __init__(self, field, **kwargs):
+    def __init__(self, field=None, **kwargs):
         """
         Construct a new ListField
 
@@ -767,7 +778,9 @@ class ListField(TypedField):
           submitted list will be validated and cleaned with Field.
         """
         super(ListField, self).__init__(**kwargs)
-        self.field = field
+
+        if field is not None:
+            self.field = field
 
     def clean(self, data):
         value = super(ListField, self).clean(data)
@@ -821,7 +834,7 @@ class NestedValidator(TypedField):
     required_types = (dict, )
     type_name = 'object'
 
-    def __init__(self, validator, **kwargs):
+    def __init__(self, validator=None, **kwargs):
         """
         Construct a new NestedValidator
 
@@ -832,7 +845,9 @@ class NestedValidator(TypedField):
           dict is passed to this validator for validation and cleaning.
         """
         super(NestedValidator, self).__init__(**kwargs)
-        self.validator = validator
+
+        if validator is not None:
+            self.validator = validator
 
     def clean(self, data):
         value = super(NestedValidator, self).clean(data)
