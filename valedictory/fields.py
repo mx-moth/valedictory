@@ -94,12 +94,13 @@ class TypedField(Field):
 
     #: A tuple of unacceptable classes for the data.
     #: For example, ``bool``\s are subclasses of ``int``\s,
-    #: but should not be accepted as valid data when an number is expected.
+    #: but should not be accepted as valid data when a number is expected.
     excluded_types = ()
 
     #: The friendly name of the type for error messages.
     type_name = u''
 
+    #:
     #: invalid_type
     #:     Raised when the incoming data is not an instance of :attr:`required_types`,
     #:     or is a subclass of :attr:`excluded_types`.
@@ -151,6 +152,7 @@ class StringField(TypedField):
     #: Defaults to no maximum length.
     max_length = float('inf')
 
+    #:
     #: non_empty
     #:     Raised when the input is an empty string, but :attr:`min_length` is 1.
     #:
@@ -287,7 +289,7 @@ class FloatField(NumberField):
 
 class EmailField(StringField):
     """
-    A field that only accepts email address strings. The email matching regular
+    A :class:`StringField` that only accepts email address strings. The email matching regular
     expression only checks for basic conformance: the string must have at least
     one character, then an '@' symbol, then more characters with at least one
     dot.
@@ -298,8 +300,9 @@ class EmailField(StringField):
 
     email_re = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
+    #:
     #: invalid_email
-    #:     Raised when the data is not a valid email address
+    #:     Raised when the data is not a valid email address.
     default_error_messages = {
         'invalid_email': _("Not a valid email address"),
     }
@@ -331,6 +334,7 @@ class DateTimeField(StringField):
     #: allowed.
     timezone_required = True
 
+    #:
     #: invalid_format
     #:     Raised when the input is not a valid ISO8601-formatted date time
     #: no_timezone
@@ -374,6 +378,7 @@ class DateField(StringField):
     # YYYY-MM-DD = 10 chars.
     max_length = 10
 
+    #:
     #: invalid_format
     #:     Raised when the input is not a valid date
     default_error_messages = {
@@ -408,6 +413,7 @@ class TimeField(StringField):
     #: allowed.
     timezone_required = True
 
+    #:
     #: invalid_format
     #:     Raised when the input is not a valid ISO8601-formatted date time
     #: no_timezone
@@ -451,6 +457,7 @@ class YearMonthField(StringField):
     # YYYY-MM = 7 chars.
     max_length = 7
 
+    #:
     #: invalid_format
     #:     Raised when the input is not a valid year-month tuple
     default_error_messages = {
@@ -483,6 +490,7 @@ class ChoiceField(Field):
     #: The field will only accept data if the value is in this set.
     choices = None
 
+    #:
     #: invalid_choice
     #:     Raised when the value is not one of the valid choices
     default_error_messages = {
@@ -540,6 +548,7 @@ class ChoiceMapField(Field):
     #: The field will only accept data if the value is in this set.
     choices = None
 
+    #:
     #: invalid_choice
     #:     Raised when the value is not one of the valid choices
     default_error_messages = {
@@ -607,6 +616,7 @@ class PunctuatedCharacterField(TypedField):
     #: There is no maximum length by default.
     max_length = float('inf')
 
+    #:
     #: allowed_characters
     #:     Raised when characters not in
     #:     :attr:`alphabet` or :attr:`punctuation` are in the input.
@@ -684,7 +694,7 @@ class RestrictedCharacterField(PunctuatedCharacterField):
 
         A string of the characters allowed in the input.
         If the input contains a character not in this string,
-        a :exc:`valedictory.exceptions.ValidationException` is raised.
+        a :exc:`~valedictory.exceptions.ValidationException` is raised.
     """
 
     punctuation = ''
@@ -714,6 +724,7 @@ class CreditCardField(PunctuatedCharacterField):
     min_length = 12
     max_length = 20
 
+    #:
     #: luhn_checksum
     #:     Raised when the credit card is not valid,
     #:     according to the Luhn checksum
@@ -788,13 +799,18 @@ class ListField(TypedField):
             raise errors
         return cleaned_list
 
+    def __deepcopy__(self, memo):
+        obj = super().__deepcopy__(memo)
+        obj.field = copy.deepcopy(self.field, memo)
+        return obj
+
 
 class NestedValidator(TypedField):
     """
     Nested validators allow nesting dicts inside one another.
     A validator is used to validate and clean the nested dict.
     To validate a person with structured address data,
-    you could make a :class:`valedictory.Validator` like:
+    you could make a :class:`~valedictory.Validator` like:
 
     .. code:: python
 
