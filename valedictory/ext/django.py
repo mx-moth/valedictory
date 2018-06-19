@@ -2,6 +2,8 @@
 Fields that integrate with Django.
 """
 
+import copy
+
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import URLValidator
@@ -66,10 +68,10 @@ class ForeignKeyField(fields.TypedField):
         except model.MultipleObjectsReturned:
             raise self.error('multiple')
 
-    def __copy__(self, **kwargs):
-        return super(ForeignKeyField, self).__copy__(
-            queryset=self.queryset, field=self.field,
-            key_type=self.required_types)
+    def __deepcopy__(self, memo):
+        obj = super(ForeignKeyField, self).__deepcopy__(memo)
+        obj.queryset = copy.deepcopy(obj.queryset, memo)
+        return obj
 
 
 class URLField(fields.StringField):

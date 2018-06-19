@@ -1,3 +1,4 @@
+import copy
 import datetime
 import math
 import sys
@@ -8,7 +9,8 @@ from valedictory.exceptions import (
 from valedictory.fields import (
     BooleanField, ChoiceField, ChoiceMapField, CreditCardField, DateField,
     DateTimeField, DigitField, EmailField, Field, FloatField, IntegerField,
-    ListField, NestedValidator, NumberField, StringField, YearMonthField)
+    ListField, NestedValidator, NumberField, StringField, TypedField,
+    YearMonthField)
 
 from .utils import ValidatorTestCase
 
@@ -30,6 +32,19 @@ class TestField(ValidatorTestCase):
 
         with self.assertRaises(NoData):
             field.clean(NoData)
+
+    def test_copy(self):
+        original = StringField(required=False, error_messages={'required': 'foo'})
+        copied = copy.deepcopy(original)
+
+        # Fields should have been copied
+        self.assertEqual(original.required, copied.required)
+        self.assertEqual(original.error_messages, copied.error_messages)
+
+        # But the error messages should have been deep cloned
+        self.assertTrue(original.error_messages is not copied.error_messages)
+        original.error_messages['required'] = 'bar'
+        self.assertEqual(copied.error_messages['required'], 'foo')
 
 
 class TestStringField(ValidatorTestCase):
@@ -422,6 +437,30 @@ class TestListField(ValidatorTestCase):
             self.assertEqual([1, 3], sorted(e.invalid_fields.keys()))
         else:
             self.fail("Expecting to catch ValidationException")
+
+    def test_copy(self):
+        original = ListField(TypedField(
+            required_types=(bool, str),
+            type_name='foo'))
+        copied = copy.deepcopy(original)
+
+        # They should both be able to clean this data
+        data = [True, 'foo', 'False', False, '']
+        self.assertEqual(data, original.clean(data))
+        self.assertEqual(data, copied.clean(data))
+
+        # Mutate the copied validator
+        copied.field.required_types = (float, type(None))
+        new_data = [1.23, None, 0.0]
+
+        # Check they both obey their new rules independently
+        self.assertEqual(data, original.clean(data))
+        with self.assertRaises(InvalidDataException):
+            copied.clean(data)
+
+        with self.assertRaises(InvalidDataException):
+            original.clean(new_data)
+        self.assertEqual(new_data, copied.clean(new_data))
 
 
 class TestNestedValidators(ValidatorTestCase):

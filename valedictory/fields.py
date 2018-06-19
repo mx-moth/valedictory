@@ -1,3 +1,4 @@
+import copy
 import datetime
 import re
 from decimal import Decimal
@@ -67,9 +68,6 @@ class Field(ErrorMessageMixin):
             else:
                 raise NoData
         return data
-
-    def __copy__(self, **kwargs):
-        return self.__class__(required=self.required, **kwargs)
 
 
 class TypedField(Field):
@@ -200,10 +198,6 @@ class StringField(TypedField):
 
         return value
 
-    def __copy__(self, **kwargs):
-        return super(StringField, self).__copy__(min_length=self.min_length,
-                                                 max_length=self.max_length)
-
 
 class BooleanField(TypedField):
     """
@@ -272,10 +266,6 @@ class NumberField(TypedField):
             raise self.error('max_value', {'max': self.max})
 
         return value
-
-    def __copy__(self, **kwargs):
-        return super(IntegerField, self).__copy__(min=self.min,
-                                                  max=self.max)
 
 
 class IntegerField(NumberField):
@@ -514,8 +504,11 @@ class ChoiceField(Field):
 
         return value
 
-    def __copy__(self, **kwargs):
-        return super(ChoiceField, self).__copy__(choices=self.choices)
+    def __deepcopy__(self, memo):
+        obj = super().__deepcopy__(memo)
+        # Shallow copy the choices dict
+        obj.choices = copy.copy(obj.choices)
+        return obj
 
 
 class ChoiceMapField(Field):
@@ -565,8 +558,11 @@ class ChoiceMapField(Field):
             # self.choices[{}] throws a TypeError: unhashable type: 'dict'
             raise self.error('invalid_choice')
 
-    def __copy__(self, **kwargs):
-        return super(ChoiceMapField, self).__copy__(choices=self.choices)
+    def __deepcopy__(self, memo):
+        obj = super().__deepcopy__(memo)
+        # Shallow copy the choices dict
+        obj.choices = copy.copy(obj.choices)
+        return obj
 
 
 class PunctuatedCharacterField(TypedField):
@@ -675,11 +671,6 @@ class PunctuatedCharacterField(TypedField):
             raise self.error('max_length', {'max': self.max_length})
 
         return value
-
-    def __copy__(self, **kwargs):
-        return super(PunctuatedCharacterField, self).__copy__(
-            alphabet=self.alphabet, punctuation=self.punctuation,
-            min_length=self.min_length, max_length=self.max_length)
 
 
 class RestrictedCharacterField(PunctuatedCharacterField):
@@ -853,5 +844,7 @@ class NestedValidator(TypedField):
         value = super(NestedValidator, self).clean(data)
         return self.validator.clean(value)
 
-    def __copy__(self, **kwargs):
-        return super(NestedValidator, self).__copy__(validator=self.validator)
+    def __deepcopy__(self, memo):
+        obj = super().__deepcopy__(memo)
+        obj.validator = copy.deepcopy(self.validator, memo)
+        return obj

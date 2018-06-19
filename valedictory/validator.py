@@ -46,7 +46,7 @@ class DeclarativeFieldsMetaclass(type):
             if field_set is None:
                 continue
             for name, field in field_set.items():
-                fields[name] = copy.copy(field)
+                fields[name] = copy.deepcopy(field)
         setattr(cls, 'fields', fields)
 
         return cls
@@ -74,8 +74,8 @@ class BaseValidator(ErrorMessageMixin):
                  error_messages=None, **kwargs):
         super().__init__(error_messages=error_messages, **kwargs)
 
+        self.fields = self.fields.copy()
         if fields is not None:
-            self.fields = self.fields.copy()
             self.fields.update(fields)
 
         if allow_unknown_fields is not None:
