@@ -518,9 +518,10 @@ class ChoiceField(Field):
         'invalid_choice': _("Not a valid choice"),
     }
 
-    def __init__(self, choices, **kwargs):
+    def __init__(self, choices=None, **kwargs):
         super(ChoiceField, self).__init__(**kwargs)
-        self.choices = set(choices)
+        if choices is not None:
+            self.choices = set(choices)
 
     def clean(self, data):
         value = super(ChoiceField, self).clean(data)
@@ -576,9 +577,10 @@ class ChoiceMapField(Field):
         'invalid_choice': _("Not a valid choice"),
     }
 
-    def __init__(self, choices, **kwargs):
+    def __init__(self, choices=None, **kwargs):
         super(ChoiceMapField, self).__init__(**kwargs)
-        self.choices = dict(choices)
+        if choices is not None:
+            self.choices = dict(choices)
 
     def clean(self, data):
         value = super(ChoiceMapField, self).clean(data)
