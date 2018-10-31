@@ -19,6 +19,8 @@ class Field(ErrorMessageMixin):
     **Attributes**
 
     .. autoattribute:: required
+    .. autoattribute:: default
+        :annotation:
 
     .. autoattribute:: default_error_messages
         :annotation:
@@ -37,9 +39,14 @@ class Field(ErrorMessageMixin):
     #: a :exc:`~valedictory.exceptions.ValidationException` will be thrown.
     required = True
 
+    #: The default for this field if no value is supplied. Can be ``None``. If
+    #: not set, there is no default and the field will not be present in the
+    #: cleaned data.
+    default = NoData
+
     #: A dictionary of messages for each error this field can raise.
-    #: The default error messages can be overridden by passing an ``error_messages`` dict
-    #: to the constructor.
+    #: The default error messages can be overridden by passing an
+    #: ``error_messages`` dict to the constructor.
     #:
     #: required
     #:     Raised when the field is not in the input data,
@@ -48,9 +55,21 @@ class Field(ErrorMessageMixin):
         'required': _("This field is required"),
     }
 
-    def __init__(self, required=True, error_messages=None, **kwargs):
+    def __init__(self, required=None, error_messages=None, **kwargs):
+        if 'default' in kwargs:
+            self.default = kwargs.pop('default')
+
         super().__init__(error_messages=error_messages, **kwargs)
-        self.required = required
+
+        if required is not None:
+            self.required = required
+
+        if self.required and self.has_default:
+            raise ValueError("A field cannot have a default and be required")
+
+    @property
+    def has_default(self):
+        return self.default is not NoData
 
     def clean(self, data):
         """
@@ -63,7 +82,9 @@ class Field(ErrorMessageMixin):
         If the field is not required, :exc:`~valedictory.exceptions.NoData` is returned.
         """
         if data is NoData:
-            if self.required:
+            if self.has_default:
+                data = self.default
+            elif self.required:
                 raise self.error('required')
             else:
                 raise NoData

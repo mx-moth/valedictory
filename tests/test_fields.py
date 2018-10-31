@@ -46,6 +46,14 @@ class TestField(ValidatorTestCase):
         original.error_messages['required'] = 'bar'
         self.assertEqual(copied.error_messages['required'], 'foo')
 
+    def test_default(self):
+        field = Field(default="foo", required=False)
+        self.assertEqual("foo", field.clean(NoData))
+
+    def test_required_default(self):
+        with self.assertRaises(ValueError):
+            Field(default="foo", required=True)
+
 
 class TestStringField(ValidatorTestCase):
 
