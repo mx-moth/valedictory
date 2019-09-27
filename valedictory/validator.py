@@ -74,7 +74,7 @@ class BaseValidator(ErrorMessageMixin):
                  error_messages=None, **kwargs):
         super().__init__(error_messages=error_messages, **kwargs)
 
-        self.fields = self.fields.copy()
+        self.fields = copy.deepcopy(self.fields)
         if fields is not None:
             self.fields.update(fields)
 
@@ -122,6 +122,11 @@ class BaseValidator(ErrorMessageMixin):
 
     def __getitem__(self, key):
         return self.fields[key]
+
+    def __deepcopy__(self, memo):
+        obj = super().__deepcopy__(memo)
+        obj.fields = copy.deepcopy(self.fields, memo)
+        return obj
 
 
 class Validator(BaseValidator, metaclass=DeclarativeFieldsMetaclass):

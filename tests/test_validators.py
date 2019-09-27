@@ -147,3 +147,48 @@ class TestMisc(ValidatorTestCase):
         self.assertEqual(even, {0: 'A', 2: 'C', 4: 'E', 6: 'G', 8: 'I'})
         self.assertEqual(keys, set(range(10)))
         self.assertEqual(values, set("ABCDEFGHIJ"))
+
+
+class ModuloIntValidator(fields.IntegerField):
+    modulo = None
+
+    def set_modulo(self, modulo):
+        self.modulo = modulo
+
+
+class ModuloValidator(Validator):
+    single = ModuloIntValidator()
+    double = ModuloIntValidator()
+
+    def __init__(self, modulo: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['single'].set_modulo(modulo)
+        self.fields['double'].set_modulo(modulo * 2)
+
+
+class TestCopy(ValidatorTestCase):
+    def test_basic(self):
+        # Make sure things start as None
+        self.assertIsNone(ModuloValidator.fields['single'].modulo)
+        self.assertIsNone(ModuloValidator.fields['double'].modulo)
+
+        # Make a modulo 3 validator
+        modulo_3 = ModuloValidator(3)
+        # Check it set modulo on its child validators
+        self.assertEquals(modulo_3.fields['single'].modulo, 3)
+        self.assertEquals(modulo_3.fields['double'].modulo, 6)
+        # Check the base validator was not mutated
+        self.assertIsNone(ModuloValidator.fields['single'].modulo)
+        self.assertIsNone(ModuloValidator.fields['double'].modulo)
+
+        # Make a modulo 7 validator
+        modulo_7 = ModuloValidator(7)
+        # Check it set modulo on its child validators
+        self.assertEquals(modulo_7.fields['single'].modulo, 7)
+        self.assertEquals(modulo_7.fields['double'].modulo, 14)
+        # Check the other validator was not mutated
+        self.assertEquals(modulo_3.fields['single'].modulo, 3)
+        self.assertEquals(modulo_3.fields['double'].modulo, 6)
+        # Check the base validator was not mutated
+        self.assertIsNone(ModuloValidator.fields['single'].modulo)
+        self.assertIsNone(ModuloValidator.fields['double'].modulo)
