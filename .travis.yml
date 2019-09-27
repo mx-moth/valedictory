@@ -1,24 +1,41 @@
 language: python
 cache: pip
 
-# Use container-based infrastructure
-sudo: false
-
-matrix:
-  include:
-   - env: TOXENV=py34-dj{111,20}
-     python: 3.4
-   - env: TOXENV=py35-dj{111,20}
-     python: 3.5
-   - env: TOXENV=py36-dj{111,20}
-     python: 3.6
-   - env: TOXENV=flake8,isort,docs
-     python: 3.6
-
 # Package installation
 install:
   - pip install tox
 
 # Run the tests
-script:
-  tox
+script: tox
+
+    # Deploy if all the test builds succeed
+jobs:
+  include:
+    - python: 3.5
+      env: TOXENV=py35-dj{111,20}
+    - python: 3.6
+      env: TOXENV=py36-dj{111,20}
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: TOXENV=py37-dj{111,20}
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: TOXENV=flake8,isort,docs
+    - stage: deploy
+      python: 3.7
+      dist: xenial
+      sudo: true
+      script: skip
+      deploy:
+        provider: pypi
+        user: tim_heap
+        password: $PYPI_PASSWORD
+        distribution: "sdist bdist_wheel"
+        on:
+          condition: $( ./setup.py --version ) == $TRAVIS_TAG
+          branch: master
+          tags: true
+
+# vim: sw=2 expandtab
