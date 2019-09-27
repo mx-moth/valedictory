@@ -3,7 +3,14 @@ import copy
 from .exceptions import ValidationException
 
 
-class ErrorMessageMixin(object):
+class DeepCopyable:
+    def __deepcopy__(self, memo):
+        obj = copy.copy(self)
+        memo[id(self)] = obj
+        return obj
+
+
+class ErrorMessageMixin(DeepCopyable):
     default_error_messages = {}
 
     def __init__(self, error_messages=None, **kwargs):
@@ -30,6 +37,6 @@ class ErrorMessageMixin(object):
         return cls(message, code=code, **kwargs)
 
     def __deepcopy__(self, memo):
-        obj = copy.copy(self)
+        obj = super().__deepcopy__(memo)
         obj.error_messages = dict(self.error_messages)
         return obj

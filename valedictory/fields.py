@@ -536,8 +536,7 @@ class ChoiceField(Field):
 
     def __deepcopy__(self, memo):
         obj = super().__deepcopy__(memo)
-        # Shallow copy the choices dict
-        obj.choices = copy.copy(obj.choices)
+        obj.choices = copy.deepcopy(obj.choices, memo)
         return obj
 
 
@@ -592,8 +591,7 @@ class ChoiceMapField(Field):
 
     def __deepcopy__(self, memo):
         obj = super().__deepcopy__(memo)
-        # Shallow copy the choices dict
-        obj.choices = copy.copy(obj.choices)
+        obj.choices = copy.deepcopy(obj.choices, memo)
         return obj
 
 

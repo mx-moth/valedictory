@@ -155,6 +155,7 @@ class ModuloIntValidator(fields.IntegerField):
     def set_modulo(self, modulo):
         self.modulo = modulo
 
+
 class ModuloValidator(Validator):
     single = ModuloIntValidator()
     double = ModuloIntValidator()
